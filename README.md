@@ -18,6 +18,8 @@
 
 - **Python 3.9+** + `httpx`
 - **[smart-search](https://github.com/anthropics/smart-search) CLI**（Grok 主搜索，需单独安装配置）
+
+> 为什么需要 smart-search？grok-search 是编排层，自己不直接调 Grok API。它通过 `subprocess` 调用 `smart-search search` 来执行 Grok 子代理调研，自己只负责补源搜索和 fetch 核实。smart-search 已经处理好了模型路由、重试、超时，无需重复造轮子。
 - 补源 API Key（可选，不配置则对应补源路径为空）
 
 ## 安装
