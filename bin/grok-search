@@ -1,0 +1,38 @@
+#!/bin/bash
+# grok-search — AI-agent multi-source search CLI
+# Uses its own venv at ~/.agents/tools/grok-search-next/.venv
+
+set -euo pipefail
+
+# Resolve symlinks to find the real script directory
+if command -v realpath &>/dev/null; then
+    SCRIPT_DIR="$(cd "$(dirname "$(realpath "$0")")" && pwd)"
+elif command -v greadlink &>/dev/null; then
+    SCRIPT_DIR="$(cd "$(dirname "$(greadlink -f "$0")")" && pwd)"
+elif command -v readlink &>/dev/null && readlink -f "$0" &>/dev/null 2>&1; then
+    SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+else
+    target="$0"
+    while [ -L "$target" ]; do
+        target="$(readlink "$target")"
+        [[ "$target" != /* ]] && target="$(cd "$(dirname "$0")" && cd "$(dirname "$target")" && pwd)/$(basename "$target")"
+    done
+    SCRIPT_DIR="$(cd "$(dirname "$target")" && pwd)"
+fi
+
+PY_SCRIPT="$SCRIPT_DIR/../src/grok_search.py"
+
+# Preferred: own venv
+OWN_VENV="$HOME/.agents/tools/grok-search-next/.venv/bin/python"
+if [ -x "$OWN_VENV" ]; then
+    exec "$OWN_VENV" "$PY_SCRIPT" "$@"
+fi
+
+# Fallback: system python3 with httpx
+if python3 -c "import httpx" 2>/dev/null; then
+    exec python3 "$PY_SCRIPT" "$@"
+fi
+
+echo "grok-search: 找不到可用的 Python 环境（需要 httpx）" >&2
+echo "请运行: python3 -m venv ~/.agents/tools/grok-search-next/.venv && ~/.agents/tools/grok-search-next/.venv/bin/pip install httpx" >&2
+exit 1
