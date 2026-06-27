@@ -3,10 +3,10 @@
 grok-search — AI-agent web research CLI with multi-source supplementation.
 
 Architecture:
-  - Simple search:    passthrough to smart-search
+  - Simple search:    direct Grok API call via smart_search module
   - Deep search:      3-way parallel (Grok + Brave + Intent provider)
   - Individual APIs:  direct httpx calls with 1-retry on network errors
-  - Planner:          passthrough to smart-search deep
+  - Planner:          direct call via smart_search module
 
 Config:  env GROK_SEARCH_<KEY>  >  ~/.config/grok-search/config.json  >  defaults
 """
@@ -17,7 +17,6 @@ import argparse
 import asyncio
 import json
 import os
-import subprocess
 import sys
 import time
 from pathlib import Path
@@ -25,6 +24,10 @@ from typing import Any
 from urllib.parse import urlparse, urlunparse
 
 import httpx
+
+# Import smart_search directly (self-contained, no subprocess)
+import smart_search.service as ss_service
+import smart_search.config as ss_config
 
 # ============================================================================
 # Constants
@@ -497,54 +500,40 @@ async def tavily_search(query: str, count: int = 5) -> dict:
 
 
 # ============================================================================
-# Smart-search passthrough
+# Smart-search integration (direct import, no subprocess)
 # ============================================================================
 
-def _run_smart_search(cmd: list[str], timeout: int) -> dict:
-    """Run a smart-search subprocess and return parsed JSON."""
+async def _call_grok_search(query: str, timeout: int = 120, model: str = "") -> dict:
+    """Call Grok main search via smart_search.service."""
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
-
-        if result.stdout.strip():
-            try:
-                return json.loads(result.stdout)
-            except json.JSONDecodeError:
-                pass
-
-        if result.stderr.strip():
-            try:
-                return json.loads(result.stderr)
-            except json.JSONDecodeError:
-                pass
-
-        raw = (result.stdout + result.stderr).strip()[:500]
-        return {
-            "ok": False,
-            "error_type": "network_error",
-            "error": f"smart-search 返回非 JSON: {raw}",
-        }
-    except subprocess.TimeoutExpired:
-        return {"ok": False, "error_type": "timeout", "error": f"smart-search 超时 ({timeout}s)"}
-    except FileNotFoundError:
-        return {"ok": False, "error_type": "config_error", "error": "smart-search 未安装或不在 PATH 中"}
+        result = await asyncio.wait_for(
+            ss_service.search(query, model=model or "", validation="balanced"),
+            timeout=timeout + 30,
+        )
+        return result
+    except asyncio.TimeoutError:
+        return {"ok": False, "error_type": "timeout", "error": f"Grok 搜索超时 ({timeout}s)"}
     except Exception as e:
-        print(f"  ⚠ smart-search 调用失败: {e}", file=sys.stderr)
-        return {"ok": False, "error_type": "network_error", "error": f"smart-search 调用失败: {e}"}
+        print(f"  ⚠ Grok 搜索失败: {e}", file=sys.stderr)
+        return {"ok": False, "error_type": "network_error", "error": f"Grok 搜索失败: {e}"}
 
 
-def call_smart_search_search(query: str, timeout: int = 120, model: str = "") -> dict:
-    cmd = ["smart-search", "search", query, "--format", "json", "--timeout", str(timeout)]
-    if model:
-        cmd.extend(["--model", model])
-    return _run_smart_search(cmd, timeout + 30)
+async def _call_grok_fetch(url: str) -> dict:
+    """Call fetch via smart_search.service."""
+    try:
+        return await asyncio.wait_for(ss_service.fetch(url), 90)
+    except asyncio.TimeoutError:
+        return {"ok": False, "error_type": "timeout", "error": "Fetch 超时 (90s)"}
+    except Exception as e:
+        return {"ok": False, "error_type": "network_error", "error": f"Fetch 失败: {e}"}
 
 
-def call_smart_search_fetch(url: str) -> dict:
-    return _run_smart_search(["smart-search", "fetch", url, "--format", "json"], 90)
-
-
-def call_smart_search_deep(query: str) -> dict:
-    return _run_smart_search(["smart-search", "deep", query, "--format", "json"], 30)
+def _call_grok_deep(query: str) -> dict:
+    """Call deep research planner via smart_search.service."""
+    try:
+        return ss_service.build_deep_research_plan(query)
+    except Exception as e:
+        return {"ok": False, "error_type": "runtime_error", "error": f"Deep planner 失败: {e}"}
 
 
 # ============================================================================
@@ -569,7 +558,7 @@ async def deep_search(
     """
     Three-way parallel deep search:
 
-      1. Grok main search   (smart-search subprocess, run in executor)
+      1. Grok main search   (direct smart_search.service call)
       2. Brave search        (with Tavily fallback)
       3. Intent search       (baidu / news / serper)
 
@@ -578,14 +567,11 @@ async def deep_search(
     t0 = time.time()
 
     intent_api = INTENT_API_MAP.get(intent, serper_search)
-    loop = asyncio.get_running_loop()
 
     # ---- task definitions ----
 
     async def _run_grok() -> dict:
-        return await loop.run_in_executor(
-            None, lambda: call_smart_search_search(grok_query, timeout, model)
-        )
+        return await _call_grok_search(grok_query, timeout, model)
 
     async def _run_brave() -> tuple[dict, str]:
         r = await brave_search(short_query, count)
@@ -677,7 +663,7 @@ async def deep_search(
         "provider": "grok-search",
         "intent": intent,
         "grok_command": (
-            f"smart-search search {grok_query} --timeout {timeout}"
+            f"grok-search search --deep \"{grok_query}\" --keywords \"{short_query}\" --intent {intent} --timeout {timeout}"
             + (f" --model {model}" if model else "")
         ),
         "elapsed_ms": round(total_elapsed, 2),
@@ -701,16 +687,13 @@ def doctor_check() -> dict:
         else:
             checks[key] = {"value": val or "未设置（使用默认值）"}
 
-    ss_info: dict[str, Any] = {"available": False, "version": "", "error": ""}
+    # Check smart_search config (embedded, no subprocess)
+    ss_info: dict[str, Any] = {"available": True, "version": "embedded", "error": ""}
     try:
-        r = subprocess.run(["smart-search", "--version"], capture_output=True, text=True, timeout=10)
-        if r.returncode == 0:
-            ss_info["available"] = True
-            ss_info["version"] = (r.stdout.strip() or r.stderr.strip())
-    except FileNotFoundError:
-        ss_info["error"] = "smart-search 未安装或不在 PATH"
-    except subprocess.TimeoutExpired:
-        ss_info["error"] = "smart-search --version 超时"
+        ss_cfg = ss_config.Config()
+        ss_info["config_file"] = str(ss_cfg.config_file)
+        ss_info["config_exists"] = ss_cfg.config_file.exists()
+        ss_info["primary_api_mode"] = ss_cfg.get_config_value("primary_api_mode") or "chat-completions"
     except Exception as e:
         ss_info["error"] = str(e)
 
@@ -921,11 +904,11 @@ def build_parser() -> argparse.ArgumentParser:
         p.add_argument("--count", type=int, default=5, help="结果数 (默认: 5)")
 
     # ---- fetch ----
-    p_fetch = sub.add_parser("fetch", help="网页抓取（透传 smart-search fetch）")
+    p_fetch = sub.add_parser("fetch", help="网页抓取核实")
     p_fetch.add_argument("url", help="要抓取的 URL")
 
     # ---- deep (planner) ----
-    p_deep = sub.add_parser("deep", help="Deep Research 规划器（透传 smart-search deep）")
+    p_deep = sub.add_parser("deep", help="Deep Research 规划器（质检参考）")
     p_deep.add_argument("query", help="查询")
 
     # ---- config ----
@@ -983,7 +966,7 @@ def main() -> None:
                     )
                 )
         else:
-            result = call_smart_search_search(args.query, args.timeout, args.model)
+            result = asyncio.run(_call_grok_search(args.query, args.timeout, args.model))
 
     elif args.command in ("brave", "baidu", "news", "serper", "tavily"):
         provider_map = {
@@ -996,10 +979,10 @@ def main() -> None:
         result = asyncio.run(provider_map[args.command](args.query, args.count))
 
     elif args.command == "fetch":
-        result = call_smart_search_fetch(args.url)
+        result = asyncio.run(_call_grok_fetch(args.url))
 
     elif args.command == "deep":
-        result = call_smart_search_deep(args.query)
+        result = _call_grok_deep(args.query)
 
     elif args.command == "config":
         result = config_command(args)
