@@ -693,7 +693,7 @@ def doctor_check() -> dict:
         ss_cfg = ss_config.Config()
         ss_info["config_file"] = str(ss_cfg.config_file)
         ss_info["config_exists"] = ss_cfg.config_file.exists()
-        ss_info["primary_api_mode"] = ss_cfg.get_config_value("primary_api_mode") or "chat-completions"
+        ss_info["primary_api_mode"] = ss_cfg.get_saved_config().get("primary_api_mode", "chat-completions")
     except Exception as e:
         ss_info["error"] = str(e)
 
