@@ -67,6 +67,120 @@ EXIT_CODES: dict[str, int] = {
 }
 
 SMART_SEARCH_CONFIG = Path.home() / ".config" / "smart-search" / "config.json"
+_OPENAI_MODEL_CACHE: list[str] | None = None
+
+
+def _prefer_openai_model(models: list[str], profile: str = "daily", exclude: set[str] | None = None) -> str:
+    exclude = exclude or set()
+    candidates = [m for m in models if m and m not in exclude]
+    non_reasoning = [m for m in candidates if "reasoning" not in m.lower()]
+    usable = non_reasoning or candidates
+
+    def first_matching(*needles: str) -> str:
+        for model in usable:
+            lower = model.lower()
+            if all(needle in lower for needle in needles):
+                return model
+        return ""
+
+    if profile == "deep":
+        for matcher in (
+            lambda: first_matching("xhigh"),
+            lambda: first_matching("multi-agent", "high"),
+            lambda: first_matching("multi-agent", "console"),
+            lambda: first_matching("multi-agent"),
+            lambda: first_matching("console"),
+        ):
+            selected = matcher()
+            if selected:
+                return selected
+    else:
+        for matcher in (
+            lambda: next((m for m in usable if "fast" in m.lower()), ""),
+            lambda: first_matching("multi-agent", "console"),
+            lambda: first_matching("console"),
+            lambda: first_matching("multi-agent"),
+        ):
+            selected = matcher()
+            if selected:
+                return selected
+
+    return usable[0] if usable else ""
+
+
+async def _openai_compatible_models() -> list[str]:
+    check = await _openai_compatible_models_check()
+    return check.get("available_models", [])
+
+
+async def _openai_compatible_models_check() -> dict[str, Any]:
+    global _OPENAI_MODEL_CACHE
+    if _OPENAI_MODEL_CACHE is not None:
+        return {
+            "status": "ok",
+            "message": f"使用缓存模型列表，共 {len(_OPENAI_MODEL_CACHE)} 个模型",
+            "available_models": _OPENAI_MODEL_CACHE,
+        }
+
+    cfg = ss_config.config
+    api_url = cfg.openai_compatible_api_url
+    api_key = cfg.openai_compatible_api_key
+    if not api_url or not api_key:
+        _OPENAI_MODEL_CACHE = []
+        return {
+            "status": "not_configured",
+            "message": "OPENAI_COMPATIBLE_API_URL 或 OPENAI_COMPATIBLE_API_KEY 未配置",
+            "available_models": [],
+        }
+
+    t0 = time.time()
+    try:
+        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True, verify=cfg.ssl_verify_enabled) as client:
+            resp = await client.get(
+                f"{api_url.rstrip('/')}/models",
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            )
+            resp.raise_for_status()
+            data = resp.json()
+    except httpx.HTTPStatusError as e:
+        _OPENAI_MODEL_CACHE = []
+        body = e.response.text[:200] if e.response is not None else str(e)
+        return {
+            "status": "warning",
+            "message": f"模型列表接口 HTTP {e.response.status_code if e.response is not None else 'unknown'}: {body}",
+            "available_models": [],
+            "elapsed_ms": round((time.time() - t0) * 1000, 2),
+        }
+    except Exception:
+        _OPENAI_MODEL_CACHE = []
+        return {
+            "status": "error",
+            "message": "模型列表接口请求失败",
+            "available_models": [],
+            "elapsed_ms": round((time.time() - t0) * 1000, 2),
+        }
+
+    _OPENAI_MODEL_CACHE = [
+        item["id"]
+        for item in data.get("data", [])
+        if isinstance(item, dict) and isinstance(item.get("id"), str)
+    ]
+    return {
+        "status": "ok",
+        "message": f"成功获取模型列表 (HTTP {resp.status_code})，共 {len(_OPENAI_MODEL_CACHE)} 个模型",
+        "available_models": _OPENAI_MODEL_CACHE,
+        "elapsed_ms": round((time.time() - t0) * 1000, 2),
+    }
+
+
+def _looks_like_model_unavailable(result: dict) -> bool:
+    text = f"{result.get('error', '')} {result.get('content', '')}".lower()
+    return (
+        "model_not_found" in text
+        or "no available" in text
+        or "无可用渠道" in text
+        or "模型" in text and "无可用" in text
+    )
 
 
 # ============================================================================
@@ -503,13 +617,41 @@ async def tavily_search(query: str, count: int = 5) -> dict:
 # Smart-search integration (direct import, no subprocess)
 # ============================================================================
 
-async def _call_grok_search(query: str, timeout: int = 120, model: str = "") -> dict:
+async def _call_grok_search(query: str, timeout: int = 120, model: str = "", model_profile: str = "daily") -> dict:
     """Call Grok main search via smart_search.service."""
+    requested_model = model
+    auto_selected_model = ""
+    if not requested_model:
+        models = await _openai_compatible_models()
+        auto_selected_model = _prefer_openai_model(models, model_profile)
+        requested_model = auto_selected_model
+
     try:
         result = await asyncio.wait_for(
-            ss_service.search(query, model=model or "", validation="balanced"),
+            ss_service.search(query, model=requested_model or "", validation="balanced"),
             timeout=timeout + 30,
         )
+        if result.get("ok"):
+            if auto_selected_model:
+                result["model_auto_selected"] = auto_selected_model
+            return result
+
+        if _looks_like_model_unavailable(result):
+            models = await _openai_compatible_models()
+            fallback_model = _prefer_openai_model(models, model_profile, exclude={requested_model} if requested_model else set())
+            if fallback_model:
+                retry_result = await asyncio.wait_for(
+                    ss_service.search(query, model=fallback_model, validation="balanced"),
+                    timeout=timeout + 30,
+                )
+                retry_result["model_auto_retry_from"] = requested_model or ss_config.config.openai_compatible_model
+                retry_result["model_auto_selected"] = fallback_model
+                if not retry_result.get("ok"):
+                    retry_result["previous_model_error"] = result.get("error", "")
+                return retry_result
+
+        if auto_selected_model:
+            result["model_auto_selected"] = auto_selected_model
         return result
     except asyncio.TimeoutError:
         return {"ok": False, "error_type": "timeout", "error": f"Grok 搜索超时 ({timeout}s)"}
@@ -519,7 +661,52 @@ async def _call_grok_search(query: str, timeout: int = 120, model: str = "") -> 
 
 
 async def _call_grok_fetch(url: str) -> dict:
-    """Call fetch via smart_search.service."""
+    """Fetch page content: Jina Reader (free, unlimited) → direct httpx → smart_search fallback."""
+    import re
+    t0 = time.time()
+
+    # Method 1: Jina Reader (free, returns clean markdown, no API key needed)
+    try:
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True, verify=True) as client:
+            resp = await client.get(
+                f"https://r.jina.ai/{url}",
+                headers={"Accept": "text/markdown", "User-Agent": "grok-search/1.0"},
+            )
+            if resp.status_code == 200 and len(resp.text) > 100:
+                return {
+                    "ok": True,
+                    "url": url,
+                    "provider": "jina",
+                    "content": resp.text,
+                    "elapsed_ms": round((time.time() - t0) * 1000, 2),
+                }
+    except Exception:
+        pass
+
+    # Method 2: Direct httpx GET with basic HTML → text extraction
+    try:
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True, verify=True) as client:
+            resp = await client.get(
+                url,
+                headers={"User-Agent": "Mozilla/5.0 (compatible; grok-search/1.0)"},
+            )
+            if resp.status_code == 200:
+                text = re.sub(r'<script[^>]*>.*?</script>', '', resp.text, flags=re.DOTALL | re.IGNORECASE)
+                text = re.sub(r'<style[^>]*>.*?</style>', '', text, flags=re.DOTALL | re.IGNORECASE)
+                text = re.sub(r'<[^>]+>', ' ', text)
+                text = re.sub(r'\s+', ' ', text).strip()
+                if len(text) > 100:
+                    return {
+                        "ok": True,
+                        "url": url,
+                        "provider": "direct",
+                        "content": text,
+                        "elapsed_ms": round((time.time() - t0) * 1000, 2),
+                    }
+    except Exception:
+        pass
+
+    # Method 3: Fall back to smart_search (Tavily → Firecrawl)
     try:
         return await asyncio.wait_for(ss_service.fetch(url), 90)
     except asyncio.TimeoutError:
@@ -549,14 +736,15 @@ INTENT_API_MAP = {
 
 async def deep_search(
     grok_query: str,
-    short_query: str,
-    intent: str,
+    short_query: str = "",
+    intent: str = "general",
     model: str = "",
     timeout: int = 180,
     count: int = 5,
+    no_supplement: bool = False,
 ) -> dict:
     """
-    Three-way parallel deep search:
+    Three-way parallel deep search (or single when no_supplement=True):
 
       1. Grok main search   (direct smart_search.service call)
       2. Brave search        (with Tavily fallback)
@@ -571,7 +759,7 @@ async def deep_search(
     # ---- task definitions ----
 
     async def _run_grok() -> dict:
-        return await _call_grok_search(grok_query, timeout, model)
+        return await _call_grok_search(grok_query, timeout, model, model_profile="deep")
 
     async def _run_brave() -> tuple[dict, str]:
         r = await brave_search(short_query, count)
@@ -583,30 +771,35 @@ async def deep_search(
     async def _run_intent() -> dict:
         return await intent_api(short_query, count)
 
-    # ---- parallel execution ----
+    # ---- execute (skip supplements when --no-supplement) ----
 
-    try:
-        results = await asyncio.gather(
-            _run_grok(), _run_brave(), _run_intent(),
-            return_exceptions=True,
-        )
-    except KeyboardInterrupt:
-        raise
-
-    def _unwrap(val: Any, fallback: dict) -> dict:
-        if isinstance(val, Exception):
-            print(f"  ⚠ deep_search 并行任务异常: {val}", file=sys.stderr)
-            return {"ok": False, "error_type": "runtime_error", "error": str(val)}
-        return val
-
-    grok_data = _unwrap(results[0], {})
-    brave_tuple = results[1]
-    if isinstance(brave_tuple, Exception):
-        print(f"  ⚠ deep_search Brave 异常: {brave_tuple}", file=sys.stderr)
-        brave_data, brave_source = {"ok": False, "error_type": "runtime_error", "error": str(brave_tuple)}, "error"
+    if no_supplement:
+        brave_data, brave_source = {"ok": False, "error_type": "skipped", "error": "补源已跳过 (--no-supplement)", "results": []}, "skipped"
+        intent_data = {"ok": False, "error_type": "skipped", "error": "补源已跳过 (--no-supplement)", "results": []}
+        grok_data = await _run_grok()
     else:
-        brave_data, brave_source = brave_tuple
-    intent_data = _unwrap(results[2], {})
+        try:
+            results = await asyncio.gather(
+                _run_grok(), _run_brave(), _run_intent(),
+                return_exceptions=True,
+            )
+        except KeyboardInterrupt:
+            raise
+
+        def _unwrap(val: Any, fallback: dict) -> dict:
+            if isinstance(val, Exception):
+                print(f"  ⚠ deep_search 并行任务异常: {val}", file=sys.stderr)
+                return {"ok": False, "error_type": "runtime_error", "error": str(val)}
+            return val
+
+        grok_data = _unwrap(results[0], {})
+        brave_tuple = results[1]
+        if isinstance(brave_tuple, Exception):
+            print(f"  ⚠ deep_search Brave 异常: {brave_tuple}", file=sys.stderr)
+            brave_data, brave_source = {"ok": False, "error_type": "runtime_error", "error": str(brave_tuple)}, "error"
+        else:
+            brave_data, brave_source = brave_tuple
+        intent_data = _unwrap(results[2], {})
 
     total_elapsed = (time.time() - t0) * 1000
 
@@ -635,7 +828,9 @@ async def deep_search(
     degraded = (not grok_ok) and supplements_ok
     overall_ok = grok_ok or degraded
 
-    if supplements_ok and extra_sources:
+    if no_supplement:
+        source_warning = "补源已跳过 (--no-supplement)"
+    elif supplements_ok and extra_sources:
         source_warning = f"补源找到 {len(extra_sources)} 个候选来源，建议通过 fetch 核实关键链接"
     elif supplements_ok and not extra_sources:
         source_warning = "补源完成但未找到额外结果"
@@ -658,13 +853,16 @@ async def deep_search(
         "extra_sources_count": len(extra_sources),
         "brave_sources": brave_results,
         "intent_sources": intent_results,
+        "supplement_skipped": no_supplement,
         "source_warning": source_warning,
         "deep_mode": True,
         "provider": "grok-search",
         "intent": intent,
+        "content_disclaimer": "content 是 Grok 子代理的调研原料，不是最终答案。调用 AI 必须自行验证关键论断、发现矛盾、做出判断。",
         "grok_command": (
-            f"grok-search search --deep \"{grok_query}\" --keywords \"{short_query}\" --intent {intent} --timeout {timeout}"
+            f"grok-search search --deep \"{grok_query}\" --short \"{short_query}\" --intent {intent} --timeout {timeout}"
             + (f" --model {model}" if model else "")
+            + (" --no-supplement" if no_supplement else "")
         ),
         "elapsed_ms": round(total_elapsed, 2),
         "grok_elapsed_ms": grok_data.get("elapsed_ms", 0),
@@ -677,7 +875,7 @@ async def deep_search(
 # Doctor — configuration check
 # ============================================================================
 
-def doctor_check() -> dict:
+async def doctor_check(live: bool = False) -> dict:
     checks: dict[str, Any] = {}
     for key in sorted(CONFIG_KEYS):
         val = Config.get(key)
@@ -687,25 +885,74 @@ def doctor_check() -> dict:
         else:
             checks[key] = {"value": val or "未设置（使用默认值）"}
 
-    # Check smart_search config (embedded, no subprocess)
+    # Check smart_search config (embedded, no subprocess). By default this only
+    # hits /models, which should not run inference or consume model-call quota.
     ss_info: dict[str, Any] = {"available": True, "version": "embedded", "error": ""}
+    ss_doctor: dict[str, Any] = {}
+    primary_connection_test: dict[str, Any] = {}
+    main_search_connection_tests: dict[str, Any] = {}
+    available_models: list[str] = []
     try:
         ss_cfg = ss_config.Config()
         ss_info["config_file"] = str(ss_cfg.config_file)
         ss_info["config_exists"] = ss_cfg.config_file.exists()
         ss_info["primary_api_mode"] = ss_cfg.get_saved_config().get("primary_api_mode", "chat-completions")
+        ss_info["live_check"] = live
+        if live:
+            ss_doctor = await ss_service.doctor()
+            ss_info["doctor_ok"] = ss_doctor.get("ok", False)
+            primary_connection_test = ss_doctor.get("primary_connection_test", {})
+            main_search_connection_tests = ss_doctor.get("main_search_connection_tests", {})
+            ss_info["primary_connection_test"] = primary_connection_test
+            for test in main_search_connection_tests.values():
+                if isinstance(test, dict):
+                    available_models.extend(test.get("available_models", []))
+                    models_test = test.get("models_endpoint_test", {})
+                    if isinstance(models_test, dict):
+                        available_models.extend(models_test.get("available_models", []))
+        else:
+            models_test = await _openai_compatible_models_check()
+            available_models = models_test.get("available_models", [])
+            selected_daily = _prefer_openai_model(available_models, "daily")
+            selected_deep = _prefer_openai_model(available_models, "deep")
+            primary_connection_test = {
+                "status": models_test.get("status", "error"),
+                "message": models_test.get("message", ""),
+                "models_endpoint_test": models_test,
+                "chat_completion_test": {
+                    "status": "skipped",
+                    "message": "默认 doctor 不发起模型推理；需要真实 chat 测试时使用 `grok-search doctor --live`。",
+                },
+                "available_models": available_models,
+                "selected_daily_model": selected_daily,
+                "selected_deep_model": selected_deep,
+            }
+            main_search_connection_tests = {"openai-compatible": primary_connection_test}
+            ss_info["doctor_ok"] = models_test.get("status") == "ok"
+            ss_info["primary_connection_test"] = primary_connection_test
     except Exception as e:
         ss_info["error"] = str(e)
 
     core_ok = bool(Config.get("BRAVE_API_KEY")) and bool(
         Config.get("TAVILY_API_KEY") or _get_tavily_key_from_smart_search()
     )
+    smart_search_ok = bool(ss_doctor.get("ok", False)) if live and ss_doctor else (
+        primary_connection_test.get("status") == "ok" if primary_connection_test else not bool(ss_info.get("error"))
+    )
 
     return {
-        "ok": True,
+        "ok": core_ok and smart_search_ok,
+        "live_check": live,
+        "quota_note": (
+            "默认 doctor 只请求 /models，不发起 chat/completions；`--live` 会发起真实模型调用，并可能消耗模型调用次数。"
+        ),
         "config_file": str(CONFIG_FILE),
         "config_exists": CONFIG_FILE.exists(),
         "smart_search": ss_info,
+        "main_search_connection_tests": main_search_connection_tests,
+        "primary_connection_test": primary_connection_test,
+        "available_models": list(dict.fromkeys(available_models)),
+        "smart_search_doctor": ss_doctor,
         "core_providers_configured": core_ok,
         "checks": checks,
     }
@@ -863,6 +1110,11 @@ def format_markdown(data: dict) -> str:
 # ============================================================================
 
 def build_parser() -> argparse.ArgumentParser:
+    format_parent = argparse.ArgumentParser(add_help=False)
+    format_parent.add_argument(
+        "--format", choices=["json", "markdown"], default=argparse.SUPPRESS, help=argparse.SUPPRESS
+    )
+
     parser = argparse.ArgumentParser(
         prog="grok-search",
         description="AI-agent web research CLI with multi-source supplementation.",
@@ -874,7 +1126,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", help="子命令")
 
     # ---- search ----
-    p_search = sub.add_parser("search", help="Grok 搜索（简单）或深度搜索（--deep）")
+    p_search = sub.add_parser("search", parents=[format_parent], help="Grok 搜索（简单）或深度搜索（--deep）")
     p_search.add_argument("query", help="搜索查询")
     p_search.add_argument("--deep", action="store_true", help="启用深度搜索（三路并行补源）")
     p_search.add_argument(
@@ -896,35 +1148,44 @@ def build_parser() -> argparse.ArgumentParser:
     p_search.add_argument(
         "--count", type=int, default=5, help="补源结果数 (默认: 5)"
     )
+    p_search.add_argument(
+        "--no-supplement", action="store_true", dest="no_supplement",
+        help="跳过补源搜索（仅 Grok 主搜索，--deep 模式下可用）"
+    )
 
     # ---- individual providers ----
     for name in ["brave", "baidu", "news", "serper", "tavily"]:
-        p = sub.add_parser(name, help=f"{name.title()} 搜索")
+        p = sub.add_parser(name, parents=[format_parent], help=f"{name.title()} 搜索")
         p.add_argument("query", help="搜索查询")
         p.add_argument("--count", type=int, default=5, help="结果数 (默认: 5)")
 
     # ---- fetch ----
-    p_fetch = sub.add_parser("fetch", help="网页抓取核实")
+    p_fetch = sub.add_parser("fetch", parents=[format_parent], help="网页抓取核实")
     p_fetch.add_argument("url", help="要抓取的 URL")
 
     # ---- deep (planner) ----
-    p_deep = sub.add_parser("deep", help="Deep Research 规划器（质检参考）")
+    p_deep = sub.add_parser("deep", parents=[format_parent], help="Deep Research 规划器（质检参考）")
     p_deep.add_argument("query", help="查询")
 
     # ---- config ----
-    p_config = sub.add_parser("config", help="配置管理")
+    p_config = sub.add_parser("config", parents=[format_parent], help="配置管理")
     p_csub = p_config.add_subparsers(dest="action")
-    p_csub.add_parser("list", help="列出所有配置")
-    p_cget = p_csub.add_parser("get", help="获取配置值")
+    p_csub.add_parser("list", parents=[format_parent], help="列出所有配置")
+    p_cget = p_csub.add_parser("get", parents=[format_parent], help="获取配置值")
     p_cget.add_argument("key", help="配置键名")
-    p_cset = p_csub.add_parser("set", help="设置配置值")
+    p_cset = p_csub.add_parser("set", parents=[format_parent], help="设置配置值")
     p_cset.add_argument("key", help="配置键名")
     p_cset.add_argument("value", help="配置值")
-    p_cunset = p_csub.add_parser("unset", help="删除配置")
+    p_cunset = p_csub.add_parser("unset", parents=[format_parent], help="删除配置")
     p_cunset.add_argument("key", help="配置键名")
 
     # ---- doctor ----
-    sub.add_parser("doctor", help="配置检查")
+    p_doctor = sub.add_parser("doctor", parents=[format_parent], help="配置检查")
+    p_doctor.add_argument(
+        "--live",
+        action="store_true",
+        help="执行真实 chat/completions 和 provider 连通性测试；可能消耗模型/API 调用次数",
+    )
 
     return parser
 
@@ -948,25 +1209,27 @@ def main() -> None:
 
     if args.command == "search":
         if args.deep:
-            if not args.short:
+            no_supp = getattr(args, 'no_supplement', False)
+            if not no_supp and not args.short:
                 result = {
                     "ok": False,
                     "error_type": "parameter_error",
-                    "error": "--deep 模式需要 --short 参数（补源搜索关键词）",
+                    "error": "--deep 模式需要 --short 参数（除非加 --no-supplement 跳过补源）",
                 }
             else:
                 result = asyncio.run(
                     deep_search(
                         grok_query=args.query,
-                        short_query=args.short,
+                        short_query=args.short or args.query,
                         intent=args.intent,
                         model=args.model,
                         timeout=args.timeout,
                         count=args.count,
+                        no_supplement=no_supp,
                     )
                 )
         else:
-            result = asyncio.run(_call_grok_search(args.query, args.timeout, args.model))
+            result = asyncio.run(_call_grok_search(args.query, args.timeout, args.model, model_profile="daily"))
 
     elif args.command in ("brave", "baidu", "news", "serper", "tavily"):
         provider_map = {
@@ -988,7 +1251,7 @@ def main() -> None:
         result = config_command(args)
 
     elif args.command == "doctor":
-        result = doctor_check()
+        result = asyncio.run(doctor_check(live=args.live))
 
     # ---- output ----
 

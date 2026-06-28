@@ -1885,7 +1885,13 @@ async def _probe_openai_compatible_search_shape(
     except httpx.TimeoutException as e:
         return _diagnose_check_result(name=name, status="timeout", message=f"请求超时: {e}", start=start, stream=stream)
     except httpx.HTTPStatusError as e:
-        body = e.response.text[:200] if e.response is not None else str(e)
+        body = str(e)
+        if e.response is not None:
+            try:
+                await e.response.aread()
+                body = e.response.text[:200]
+            except Exception:
+                body = str(e)
         status_code = e.response.status_code if e.response is not None else None
         content_type = e.response.headers.get("content-type", "") if e.response is not None else ""
         return _diagnose_check_result(
