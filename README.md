@@ -153,17 +153,21 @@ export GROK_SEARCH_SERPER_API_KEY="..."
 
 | 档位 | 适用场景 | 工具 |
 |------|---------|------|
-| **0 - Simple** | 定义/概念/一句话能答 | `fetch` 一个权威源 |
+| **0 - Simple** | 定义/概念/一句话能答 | `brave/baidu` 搜 → `fetch` |
 | **1 - Single Agent** | 单主题/对比两个选项/方向一致 | `search --deep` |
 | **2 - Multi Agent** | 3+ 独立对象/跨领域 | 调用 AI 并行 `search` 多次 |
 
-### 档位 0：抓取单个权威源
+### 档位 0：搜 + 抓取
 
 ```bash
-grok-search fetch "https://pi.dev/" --format json
+# 1. 先用搜索 API 找到候选 URL
+grok-search brave|baidu "关键词" --count 5
+# 2. 从结果中选 1-2 个最相关的 URL
+grok-search fetch "https://最相关的URL" --format json
+# 3. 用 fetch 到的原文直接回答用户
 ```
 
-返回 markdown 格式的页面内容。**最便宜、最准确**，适合"X 是什么"这种查询。
+**不走 Grok**——简单问题不需要多 Agent 辩论，直接 fetch 原文比 Grok 转述更可靠。**最便宜、最准确**，适合"X 是什么"这种查询。
 
 ### 档位 1：单 Grok 调研
 

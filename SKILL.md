@@ -83,7 +83,7 @@ grok-search brave|baidu "关键词" --count 5
 **流程**：
 ```
 调用 AI 用 Prompt E 组织 task
-  → grok-search search --deep "Prompt E" --short "关键词" --intent ... --model <深度模型>
+  → grok-search search --deep "Prompt E" --short "关键词" --intent ... --model MODEL_NAME
     ├─ Grok 子代理调研（smart-search 透传）
     ├─ Brave 补源（失败 → Tavily 兜底）
     └─ 意图补源（按 intent 选一）
@@ -224,10 +224,10 @@ grok-search brave|baidu "关键词" --count 5
 grok-search fetch "https://目标URL"
 
 # 档位 1/2：深度搜索（三路并行：Grok子代理 + Brave + 意图补源）
-grok-search --format json search --deep "Grok调研任务" --short "关键词" --intent chinese|news|general --model <深度模型> --timeout 180
+grok-search --format json search --deep "Grok调研任务" --short "关键词" --intent chinese|news|general --model MODEL_NAME --timeout 180
 
 # 档位 1 跳过补源（简单 deep 任务）
-grok-search --format json search --deep "任务" --short "关键词" --intent general --model <模型> --timeout 180 --no-supplement
+grok-search --format json search --deep "任务" --short "关键词" --intent general --model MODEL_NAME --timeout 180 --no-supplement
 
 # 独立补源
 grok-search brave|baidu|news|serper|tavily "关键词" --count 5
