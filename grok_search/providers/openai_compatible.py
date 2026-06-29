@@ -94,7 +94,7 @@ class OpenAICompatibleSearchProvider(BaseSearchProvider):
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
             "Accept": "application/json, text/event-stream",
-            "User-Agent": "smart-search/0.1.0",
+            "User-Agent": "grok-search/0.1.0",
         }
 
     def _get_ssl_verify(self) -> bool:

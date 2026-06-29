@@ -5,7 +5,7 @@ description: 基于 Grok AI Agent 主搜索 + 多源补源的智能搜索。Grok
 
 # Grok Search
 
-**双 CLI 架构**：`smart-search`（Grok AI Agent 主搜索）+ `grok-search`（补源搜索，独立工具）。
+**双 CLI 架构**：`grok-search`（Grok AI Agent 主搜索）+ `grok-search`（补源搜索，独立工具）。
 
 **核心定位**：
 - **Grok 是 AI Agent**，不是搜索 API。它有完整的任务拆解、多步规划、结构化回答能力，背靠 x.ai 且有 X 平台独家内容，内部运行 4-16 个专精 Agent 并行调研、交叉验证、辩论合成。把它当作**独立调查的子代理**来用。
@@ -18,7 +18,7 @@ description: 基于 Grok AI Agent 主搜索 + 多源补源的智能搜索。Grok
 
 | 服务 | 用途 | 调用方式 |
 |------|------|---------|
-| Grok（smart-search） | AI Agent 主搜索，子代理调研 | smart-search CLI |
+| Grok（grok-search） | AI Agent 主搜索，子代理调研 | grok-search CLI |
 | Brave Search | 英文/通用搜索 + 补源 | grok-search CLI |
 | 百度千帆 | 中文/国内搜索 + 补源 | grok-search CLI |
 | News API | 新闻/时效补源 | grok-search CLI |
@@ -32,7 +32,7 @@ description: 基于 Grok AI Agent 主搜索 + 多源补源的智能搜索。Grok
 中转站模型不稳定，**不能写死模型名**。每次会话首次搜索前预检（不计费，`/models` 端点只列模型名，不走推理）：
 
 ```bash
-smart-search doctor --format json
+grok-search doctor --format json
 ```
 
 只取 `main_search_connection_tests.openai-compatible.models_endpoint_test.available_models`。
@@ -84,7 +84,7 @@ grok-search brave|baidu "关键词" --count 5
 ```
 调用 AI 用 Prompt E 组织 task
   → grok-search search --deep "Prompt E" --short "关键词" --intent ... --model MODEL_NAME
-    ├─ Grok 子代理调研（smart-search 透传）
+    ├─ Grok 子代理调研（grok-search 透传）
     ├─ Brave 补源（失败 → Tavily 兜底）
     └─ 意图补源（按 intent 选一）
   → 调用 AI 分析 content + extra_sources
@@ -215,7 +215,7 @@ grok-search brave|baidu "关键词" --count 5
 
 ```bash
 # 模型预检（每次会话首次搜索前，不计费）
-smart-search doctor --format json
+grok-search doctor --format json
 
 # 档位 0：搜索 API 直接搜
 grok-search brave|baidu "关键词" --count 5
@@ -331,7 +331,7 @@ grok-search doctor
 - **Grok 的 content 是原料，不是答案**。调用 AI 必须自己验证关键论断、发现矛盾、做出判断
 - **补源结果不是证据**，作为论据必须先 `grok-search fetch` 核实
 - 拆了子任务后，每个子任务单独走一次深度流程
-- **模型不要写死**：每次会话首次搜索前跑 `smart-search doctor` 预检，按优先级链选
+- **模型不要写死**：每次会话首次搜索前跑 `grok-search doctor` 预检，按优先级链选
 - **不要自动改写用户原话**：有上下文时消歧，无上下文时原样传入 + 靠 Prompt E 的反问引导兜底
 - 档位 2 的 comparison 必须等所有 subject 完成后再执行
 - 档位 0 适用于"知道该搜什么但不需要分析"的场景，不是"偷懒不上 Grok"

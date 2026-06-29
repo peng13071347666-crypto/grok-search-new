@@ -1,40 +1,40 @@
 ---
-name: smart-search-cli
-description: CLI-first web research and source retrieval through the local smart-search command. Use when Codex needs current web search, source-backed fact checking, URL fetching, site mapping, official/API/documentation search, or reproducible search evidence via Skill + CLI instead of MCP tools.
+name: grok-search-cli
+description: CLI-first web research and source retrieval through the local grok-search command. Use when Codex needs current web search, source-backed fact checking, URL fetching, site mapping, official/API/documentation search, or reproducible search evidence via Skill + CLI instead of MCP tools.
 ---
 
 # Smart Search CLI
 
-Use the local `smart-search` command as the default execution layer for web research. The skill decides routing; the CLI performs the work; JSON or saved files provide evidence.
+Use the local `grok-search` command as the default execution layer for web research. The skill decides routing; the CLI performs the work; JSON or saved files provide evidence.
 
 ## Default workflow
 
-1. Run `smart-search doctor --format json` when configuration or availability is uncertain.
-2. If `doctor` reports missing configuration, use `smart-search setup` or `smart-search config set KEY VALUE` when the user provides keys. Do not ask users to edit global environment variables by default.
-3. If OpenAI-compatible `search` hangs or times out after `doctor` succeeds, run `smart-search diagnose openai-compatible --format markdown` and use its summary/recommendation. This one command tests quick chat plus real search-shape `stream=false` and `stream=true`.
-4. If `doctor` returns `ok: true`, use only `smart-search` CLI subcommands for web research. Do not call Codex native web search in the same task.
-5. Use `smart-search skills status --targets codex --format json` when the global skill may be stale; use `smart-search skills update --targets codex --format json` to refresh this skill without rerunning setup.
-6. Use `smart-search smoke --mock --format json` after CLI/provider architecture changes. Use `--live` only when real keys are available and the user expects live checks.
-7. Use `smart-search search` as the first hop for realtime, broad exploration, community signals, multi-source summaries, and routing metadata.
-8. Use `smart-search zhipu-search` for Chinese-language, domestic China, policy/regulatory, announcements, current news, or China-local source discovery.
-9. Use `smart-search context7-library` / `context7-docs` first for library, SDK, API, framework, or documentation intent.
-10. Use `smart-search exa-search` for official domains, papers, product pages, trusted sites, and low-noise discovery. Do not treat Exa as the universal second hop for every high-risk or verification task.
-11. Use `smart-search search --extra-sources N` for Tavily/Firecrawl horizontal candidates, and `smart-search fetch` for page text that can support final claims.
-12. Use `smart-search anysearch-*` only for explicit experimental vertical search: call `anysearch-domains` first, then `anysearch-search` in a selected domain. Do not use AnySearch as default fallback.
-13. Use `smart-search exa-similar` when the user gives a representative URL and wants related pages or neighboring sources.
-14. Use `smart-search fetch` when the user gives a URL or a claim depends on page content.
-15. Use `smart-search map` when a documentation site or domain structure matters.
-16. Use `smart-search model current` only to inspect explicit provider models. To change models, use `smart-search config set XAI_MODEL ...` or `smart-search config set OPENAI_COMPATIBLE_MODEL ...`.
+1. Run `grok-search doctor --format json` when configuration or availability is uncertain.
+2. If `doctor` reports missing configuration, use `grok-search setup` or `grok-search config set KEY VALUE` when the user provides keys. Do not ask users to edit global environment variables by default.
+3. If OpenAI-compatible `search` hangs or times out after `doctor` succeeds, run `grok-search diagnose openai-compatible --format markdown` and use its summary/recommendation. This one command tests quick chat plus real search-shape `stream=false` and `stream=true`.
+4. If `doctor` returns `ok: true`, use only `grok-search` CLI subcommands for web research. Do not call Codex native web search in the same task.
+5. Use `grok-search skills status --targets codex --format json` when the global skill may be stale; use `grok-search skills update --targets codex --format json` to refresh this skill without rerunning setup.
+6. Use `grok-search smoke --mock --format json` after CLI/provider architecture changes. Use `--live` only when real keys are available and the user expects live checks.
+7. Use `grok-search search` as the first hop for realtime, broad exploration, community signals, multi-source summaries, and routing metadata.
+8. Use `grok-search zhipu-search` for Chinese-language, domestic China, policy/regulatory, announcements, current news, or China-local source discovery.
+9. Use `grok-search context7-library` / `context7-docs` first for library, SDK, API, framework, or documentation intent.
+10. Use `grok-search exa-search` for official domains, papers, product pages, trusted sites, and low-noise discovery. Do not treat Exa as the universal second hop for every high-risk or verification task.
+11. Use `grok-search search --extra-sources N` for Tavily/Firecrawl horizontal candidates, and `grok-search fetch` for page text that can support final claims.
+12. Use `grok-search anysearch-*` only for explicit experimental vertical search: call `anysearch-domains` first, then `anysearch-search` in a selected domain. Do not use AnySearch as default fallback.
+13. Use `grok-search exa-similar` when the user gives a representative URL and wants related pages or neighboring sources.
+14. Use `grok-search fetch` when the user gives a URL or a claim depends on page content.
+15. Use `grok-search map` when a documentation site or domain structure matters.
+16. Use `grok-search model current` only to inspect explicit provider models. To change models, use `grok-search config set XAI_MODEL ...` or `grok-search config set OPENAI_COMPATIBLE_MODEL ...`.
 17. For current-news, policy, finance, health, or other high-risk facts, do not answer from broad `search.content` alone. Select the second source by intent: Zhipu for Chinese/current/domestic, Context7 for docs/API, Exa for official/trusted domains or papers, then `fetch` key pages and summarize only what fetched text supports.
 18. Preserve command lines and source URLs in your answer. Prefer citing fetched pages or `primary_sources`; treat `extra_sources` as follow-up candidates, not verified evidence for generated claims.
 
 ## Deep Research Mode
 
-Use Deep Research Mode when the user asks for `深度搜索`, `深度调研`, `深入搜索`, `deep search`, `deep research`, multi-source verification, cross-checking, serious review, or selection/comparison research. This is a capability-based orchestration workflow: the AI agent calls `smart-search deep "question" --format json` to get an offline plan, then composes existing `smart-search` CLI building blocks, the CLI executes those later commands, and JSON/Markdown files provide reproducible evidence. `smart-search deep` is a public planner entrypoint, not an executor; it does not call providers, run `doctor`, or fetch pages by default. It does not change default `smart-search search`, and it does not depend on an MCP session.
+Use Deep Research Mode when the user asks for `深度搜索`, `深度调研`, `深入搜索`, `deep search`, `deep research`, multi-source verification, cross-checking, serious review, or selection/comparison research. This is a capability-based orchestration workflow: the AI agent calls `grok-search deep "question" --format json` to get an offline plan, then composes existing `grok-search` CLI building blocks, the CLI executes those later commands, and JSON/Markdown files provide reproducible evidence. `grok-search deep` is a public planner entrypoint, not an executor; it does not call providers, run `doctor`, or fetch pages by default. It does not change default `grok-search search`, and it does not depend on an MCP session.
 
 Do not select a fixed topic recipe. Market, product, technical docs, news, policy, claim-checking, and URL-first prompts are examples of user language, not schema modes. Decide from intent dimensions and capability needs.
 
-Before running deep research commands, run `smart-search deep "question" --format json` and use the returned `research_plan` as your planning artifact. Use this shape:
+Before running deep research commands, run `grok-search deep "question" --format json` and use the returned `research_plan` as your planning artifact. Use this shape:
 
 ```json
 {
@@ -70,7 +70,7 @@ Before running deep research commands, run `smart-search deep "question" --forma
   ],
   "preflight": {
     "tool": "doctor",
-    "command": "smart-search doctor --format json",
+    "command": "grok-search doctor --format json",
     "when": "configuration or availability is uncertain"
   },
   "evidence_policy": "fetch_before_claim",
@@ -80,8 +80,8 @@ Before running deep research commands, run `smart-search deep "question" --forma
       "subquestion_id": "sq1",
       "tool": "search",
       "purpose": "broad discovery",
-      "command": "smart-search search \"query\" --validation balanced --extra-sources 1 --format json --output C:\\tmp\\smart-search-evidence\\YYYYMMDD-HHMM-topic\\01-search.json",
-      "output_path": "C:\\tmp\\smart-search-evidence\\YYYYMMDD-HHMM-topic\\01-search.json"
+      "command": "grok-search search \"query\" --validation balanced --extra-sources 1 --format json --output C:\\tmp\\grok-search-evidence\\YYYYMMDD-HHMM-topic\\01-search.json",
+      "output_path": "C:\\tmp\\grok-search-evidence\\YYYYMMDD-HHMM-topic\\01-search.json"
     }
   ],
   "gap_check": {
@@ -90,8 +90,8 @@ Before running deep research commands, run `smart-search deep "question" --forma
   },
   "final_answer_policy": "cite fetched evidence, list unverified candidates, and include key commands",
   "usage_boundary": {
-    "search": "smart-search search runs live fast/broad search immediately.",
-    "deep": "smart-search deep is an offline planner; it does not execute provider calls or fetch pages.",
+    "search": "grok-search search runs live fast/broad search immediately.",
+    "deep": "grok-search deep is an offline planner; it does not execute provider calls or fetch pages.",
     "execution": "An AI agent or user executes the listed steps with existing CLI commands, then performs gap_check."
   }
 }
@@ -113,8 +113,8 @@ Capability boundaries:
 
 Default Deep Research orchestration:
 
-1. Run `smart-search doctor --format json` as preflight when configuration is uncertain.
-2. Call `smart-search deep "question" --format json` to create an offline `research_plan`.
+1. Run `grok-search doctor --format json` as preflight when configuration is uncertain.
+2. Call `grok-search deep "question" --format json` to create an offline `research_plan`.
 3. Inspect `intent_signals`, `decomposition`, and `capability_plan`; do not choose fixed topic recipe ids.
 4. Execute planned `search --validation balanced --extra-sources 1..3` steps for broad discovery and read routing metadata.
 5. Execute planned `exa-search`, `exa-similar`, `zhipu-search`, `context7-library`, `context7-docs`, or `map` only when their capability boundary matches the intent.
@@ -128,10 +128,10 @@ Deep Research smoke matrix for workflow maintenance is mock-full plus live-limit
 Standard user-facing Deep Research tests:
 
 ```powershell
-smart-search deep "深度搜索一下最近的比特币行情" --format json
-smart-search deep "OpenAI Responses API web_search 和 Chat Completions 联网搜索怎么选" --budget deep --format json
-smart-search deep "帮我核验这个说法是真是假：某某工具已经完全替代 Tavily 做 AI 搜索了" --format json
-smart-search deep "https://example.com/source" --format json
+grok-search deep "深度搜索一下最近的比特币行情" --format json
+grok-search deep "OpenAI Responses API web_search 和 Chat Completions 联网搜索怎么选" --budget deep --format json
+grok-search deep "帮我核验这个说法是真是假：某某工具已经完全替代 Tavily 做 AI 搜索了" --format json
+grok-search deep "https://example.com/source" --format json
 ```
 
 ## Provider Routing
@@ -166,7 +166,7 @@ smart-search deep "https://example.com/source" --format json
 
 ## Evidence Files
 
-For multi-source research, use `--output` to save evidence under `C:\tmp\smart-search-evidence\` with a descriptive timestamped filename. Stdout should still contain the full JSON result unless markdown or content output was explicitly chosen for human reading.
+For multi-source research, use `--output` to save evidence under `C:\tmp\grok-search-evidence\` with a descriptive timestamped filename. Stdout should still contain the full JSON result unless markdown or content output was explicitly chosen for human reading.
 
 For claim-level evidence, prefer this order:
 
@@ -177,34 +177,34 @@ For claim-level evidence, prefer this order:
 Prefer shorter, source-directed commands:
 
 ```powershell
-smart-search exa-search "Reuters Iran Hormuz latest" --num-results 5 --include-highlights --format json --output C:\tmp\smart-search-evidence\iran-hormuz-exa.json
-smart-search exa-search "OpenAI Responses API documentation" --include-domains platform.openai.com developers.openai.com --num-results 5 --include-text --format json
-smart-search exa-similar "https://example.com/source" --num-results 5 --format json
-smart-search fetch "https://example.com/source" --format json --output C:\tmp\smart-search-evidence\source-fetch.json
-smart-search search "Iran Hormuz latest military talks" --extra-sources 3 --timeout 90 --format json --output C:\tmp\smart-search-evidence\iran-hormuz-search.json
+grok-search exa-search "Reuters Iran Hormuz latest" --num-results 5 --include-highlights --format json --output C:\tmp\grok-search-evidence\iran-hormuz-exa.json
+grok-search exa-search "OpenAI Responses API documentation" --include-domains platform.openai.com developers.openai.com --num-results 5 --include-text --format json
+grok-search exa-similar "https://example.com/source" --num-results 5 --format json
+grok-search fetch "https://example.com/source" --format json --output C:\tmp\grok-search-evidence\source-fetch.json
+grok-search search "Iran Hormuz latest military talks" --extra-sources 3 --timeout 90 --format json --output C:\tmp\grok-search-evidence\iran-hormuz-search.json
 ```
 
 ## Local wrapper contract
 
-- Expect `smart-search` to resolve from the user's PATH.
+- Expect `grok-search` to resolve from the user's PATH.
 - This bundled skill is maintained with the `smartsearch` repository.
-- Prefer the CLI's local config file managed by `smart-search setup` / `smart-search config`.
+- Prefer the CLI's local config file managed by `grok-search setup` / `grok-search config`.
 - Environment variables remain supported for CI and advanced users, and override the local config file.
 - Do not ask users to set Windows global API-key environment variables by default.
-- If keys are changed with `smart-search config set`, rerun the CLI; no Codex restart is needed.
+- If keys are changed with `grok-search config set`, rerun the CLI; no Codex restart is needed.
 - If PATH is changed, a new terminal or Codex restart may be needed.
-- On Windows, the default local config file is `%LOCALAPPDATA%\smart-search\config.json`. Linux/macOS default to `~/.config/smart-search/config.json`.
+- On Windows, the default local config file is `%LOCALAPPDATA%\grok-search\config.json`. Linux/macOS default to `~/.config/grok-search/config.json`.
 - In sandboxed runtimes (Codex CLI, containers, CI) where the default config directory is not writable or must be pinned, set `SMART_SEARCH_CONFIG_DIR` to an absolute writable path. The CLI uses it for both config and relative logs and skips default-directory selection.
-- Earlier Windows source defaults used `~\.config\smart-search\config.json`, while some installs were already pinned to `%LOCALAPPDATA%\smart-search` through `SMART_SEARCH_CONFIG_DIR`. If the new default file is missing but the old file exists, `doctor` reports `legacy_windows_home` as the active source so upgrades do not silently lose configuration. It also reports the override value and whether it matches the current default.
-- Use `smart-search doctor --format json` for agent/script parsing and `smart-search doctor --format markdown` when a human wants a detailed diagnostic report.
-- If `smart-search doctor --format json` returns `ok: false`, follow the `error` field's guidance (`smart-search setup` or `smart-search config set KEY VALUE`); do not silently fall back to native web search.
-- Use `smart-search diagnose openai-compatible --format markdown` when `doctor` succeeds but OpenAI-compatible `search` appears to hang, returns a timeout, or differs between `--stream` and `--no-stream`. It is the beginner-facing one-command report for upstream/relay compatibility.
-- Interactive `smart-search setup` is a language-selecting grouped wizard with arrow-key / Space / Enter provider selection. It guides users through required `main_search`, `docs_search`, and fetch capability, then optional `web_search` reinforcement.
+- Earlier Windows source defaults used `~\.config\grok-search\config.json`, while some installs were already pinned to `%LOCALAPPDATA%\grok-search` through `SMART_SEARCH_CONFIG_DIR`. If the new default file is missing but the old file exists, `doctor` reports `legacy_windows_home` as the active source so upgrades do not silently lose configuration. It also reports the override value and whether it matches the current default.
+- Use `grok-search doctor --format json` for agent/script parsing and `grok-search doctor --format markdown` when a human wants a detailed diagnostic report.
+- If `grok-search doctor --format json` returns `ok: false`, follow the `error` field's guidance (`grok-search setup` or `grok-search config set KEY VALUE`); do not silently fall back to native web search.
+- Use `grok-search diagnose openai-compatible --format markdown` when `doctor` succeeds but OpenAI-compatible `search` appears to hang, returns a timeout, or differs between `--stream` and `--no-stream`. It is the beginner-facing one-command report for upstream/relay compatibility.
+- Interactive `grok-search setup` is a language-selecting grouped wizard with arrow-key / Space / Enter provider selection. It guides users through required `main_search`, `docs_search`, and fetch capability, then optional `web_search` reinforcement.
 - The setup wizard prints beginner filling examples for official-service and relay/pooled-endpoint minimum profiles. Keep that guidance on stderr so stdout remains parseable JSON/Markdown/content output.
-- Use `smart-search setup --lang en` for an English wizard and `smart-search setup --advanced` only when low-level config keys must be shown one by one.
-- Use `smart-search setup --non-interactive --zhipu-api-url "https://open.bigmodel.cn/api" --zhipu-search-engine "search_std"` to save Zhipu Web Search API endpoint and search service without prompts.
-- Use `smart-search setup --non-interactive --openai-compatible-stream true` only when an OpenAI-compatible relay benefits from SSE streaming for long requests. Default remains false.
-- Use `smart-search setup --non-interactive --anysearch-api-url "https://api.anysearch.com/mcp" --anysearch-key "key"` only for experimental AnySearch acceptance; do not add it to the normal minimum-profile setup.
+- Use `grok-search setup --lang en` for an English wizard and `grok-search setup --advanced` only when low-level config keys must be shown one by one.
+- Use `grok-search setup --non-interactive --zhipu-api-url "https://open.bigmodel.cn/api" --zhipu-search-engine "search_std"` to save Zhipu Web Search API endpoint and search service without prompts.
+- Use `grok-search setup --non-interactive --openai-compatible-stream true` only when an OpenAI-compatible relay benefits from SSE streaming for long requests. Default remains false.
+- Use `grok-search setup --non-interactive --anysearch-api-url "https://api.anysearch.com/mcp" --anysearch-key "key"` only for experimental AnySearch acceptance; do not add it to the normal minimum-profile setup.
 - Interactive setup asks for Zhipu API key, API URL, and search service when optional `web_search` reinforcement selects Zhipu.
 - Use `TAVILY_API_URL=https://<host>/api/tavily` for Tavily Hikari / pooled endpoints. Root host and `/mcp` inputs are normalized by setup; `/mcp` itself is not the REST base Smart Search should call.
 - `TAVILY_TIMEOUT_SECONDS` controls the Tavily `doctor` connectivity timeout and defaults to `30`. Raise it for slower pooled/community Tavily endpoints before judging the provider unhealthy.
@@ -213,91 +213,91 @@ smart-search search "Iran Hormuz latest military talks" --extra-sources 3 --time
 ## Command Patterns
 
 ```powershell
-smart-search search "query" --extra-sources 5 --timeout 90 --format json --output result.json
-smart-search search "query" --stream --format json
-smart-search diagnose openai-compatible --format markdown
-smart-search search "query" --platform "Reuters" --model "model-id" --extra-sources 3 --timeout 90 --format json
-smart-search search "nba战报" --format content
-smart-search search "query" --validation strict --fallback auto --providers auto --format json
-smart-search exa-search "query" --num-results 5 --search-type neural --include-text --include-highlights --include-domains docs.example.com developer.mozilla.org --format json
-smart-search exa-similar "https://example.com/article" --num-results 5 --format json
-smart-search context7-library "react" "hooks" --format json
-smart-search context7-docs "/facebook/react" "useEffect cleanup" --format json
-smart-search zhipu-search "today China AI news" --count 5 --format json
-smart-search anysearch-domains security --format json
-smart-search anysearch-search "CVE-2024-3094" --domain security.cve --max-results 3 --format json
-smart-search anysearch-extract "https://example.com/source" --format json
-smart-search anysearch-batch "AAPL" "RAG papers" --max-results 2 --format json
-smart-search fetch "https://example.com" --format markdown --output page.md
-smart-search map "https://docs.example.com" --instructions "Find API reference pages" --max-depth 1 --max-breadth 20 --limit 50 --format json
-smart-search setup
-smart-search setup --lang en
-smart-search setup --advanced
-smart-search setup --non-interactive --install-skills hermes
-smart-search skills status --targets codex --format json
-smart-search skills update --targets codex --format json
-smart-search skills update --all --format json
-smart-search setup --non-interactive --zhipu-api-url "https://open.bigmodel.cn/api" --zhipu-search-engine "search_std"
-smart-search setup --non-interactive --openai-compatible-stream true
-smart-search setup --non-interactive --anysearch-api-url "https://api.anysearch.com/mcp" --anysearch-key "key"
-smart-search setup --non-interactive --tavily-api-url "https://api.tavily.com" --tavily-key "key"
-smart-search --version
-smart-search config path --format json
-smart-search config list --format json
-smart-search config list --format markdown
-smart-search config set XAI_API_KEY "key" --format json
-smart-search config set XAI_MODEL "grok-4-fast" --format json
-smart-search config set XAI_TOOLS "web_search,x_search" --format json
-smart-search config set OPENAI_COMPATIBLE_API_URL "https://api.openai.com/v1" --format json
-smart-search config set OPENAI_COMPATIBLE_API_KEY "key" --format json
-smart-search config set OPENAI_COMPATIBLE_MODEL "model-id" --format json
-smart-search config set OPENAI_COMPATIBLE_STREAM "true" --format json
-smart-search config set ANYSEARCH_API_URL "https://api.anysearch.com/mcp" --format json
-smart-search config set ANYSEARCH_API_KEY "key" --format json
-smart-search config set ANYSEARCH_TIMEOUT_SECONDS "30" --format json
-smart-search config set EXA_API_KEY "key" --format json
-smart-search config set CONTEXT7_API_KEY "key" --format json
-smart-search config set ZHIPU_API_KEY "key" --format json
-smart-search config set ZHIPU_API_URL "https://open.bigmodel.cn/api" --format json
-smart-search config set ZHIPU_SEARCH_ENGINE "search_pro" --format json
-smart-search config set TAVILY_API_URL "https://api.tavily.com" --format json
-smart-search config set TAVILY_TIMEOUT_SECONDS "45" --format json
-smart-search config set FIRECRAWL_API_URL "https://api.firecrawl.dev/v2" --format json
-smart-search model current --format json
-smart-search doctor --format json
-smart-search doctor --format markdown
-smart-search diagnose openai-compatible --format markdown
-smart-search regression
-smart-search smoke --mock --format json
-smart-search smoke --mock --format markdown
+grok-search search "query" --extra-sources 5 --timeout 90 --format json --output result.json
+grok-search search "query" --stream --format json
+grok-search diagnose openai-compatible --format markdown
+grok-search search "query" --platform "Reuters" --model "model-id" --extra-sources 3 --timeout 90 --format json
+grok-search search "nba战报" --format content
+grok-search search "query" --validation strict --fallback auto --providers auto --format json
+grok-search exa-search "query" --num-results 5 --search-type neural --include-text --include-highlights --include-domains docs.example.com developer.mozilla.org --format json
+grok-search exa-similar "https://example.com/article" --num-results 5 --format json
+grok-search context7-library "react" "hooks" --format json
+grok-search context7-docs "/facebook/react" "useEffect cleanup" --format json
+grok-search zhipu-search "today China AI news" --count 5 --format json
+grok-search anysearch-domains security --format json
+grok-search anysearch-search "CVE-2024-3094" --domain security.cve --max-results 3 --format json
+grok-search anysearch-extract "https://example.com/source" --format json
+grok-search anysearch-batch "AAPL" "RAG papers" --max-results 2 --format json
+grok-search fetch "https://example.com" --format markdown --output page.md
+grok-search map "https://docs.example.com" --instructions "Find API reference pages" --max-depth 1 --max-breadth 20 --limit 50 --format json
+grok-search setup
+grok-search setup --lang en
+grok-search setup --advanced
+grok-search setup --non-interactive --install-skills hermes
+grok-search skills status --targets codex --format json
+grok-search skills update --targets codex --format json
+grok-search skills update --all --format json
+grok-search setup --non-interactive --zhipu-api-url "https://open.bigmodel.cn/api" --zhipu-search-engine "search_std"
+grok-search setup --non-interactive --openai-compatible-stream true
+grok-search setup --non-interactive --anysearch-api-url "https://api.anysearch.com/mcp" --anysearch-key "key"
+grok-search setup --non-interactive --tavily-api-url "https://api.tavily.com" --tavily-key "key"
+grok-search --version
+grok-search config path --format json
+grok-search config list --format json
+grok-search config list --format markdown
+grok-search config set XAI_API_KEY "key" --format json
+grok-search config set XAI_MODEL "grok-4-fast" --format json
+grok-search config set XAI_TOOLS "web_search,x_search" --format json
+grok-search config set OPENAI_COMPATIBLE_API_URL "https://api.openai.com/v1" --format json
+grok-search config set OPENAI_COMPATIBLE_API_KEY "key" --format json
+grok-search config set OPENAI_COMPATIBLE_MODEL "model-id" --format json
+grok-search config set OPENAI_COMPATIBLE_STREAM "true" --format json
+grok-search config set ANYSEARCH_API_URL "https://api.anysearch.com/mcp" --format json
+grok-search config set ANYSEARCH_API_KEY "key" --format json
+grok-search config set ANYSEARCH_TIMEOUT_SECONDS "30" --format json
+grok-search config set EXA_API_KEY "key" --format json
+grok-search config set CONTEXT7_API_KEY "key" --format json
+grok-search config set ZHIPU_API_KEY "key" --format json
+grok-search config set ZHIPU_API_URL "https://open.bigmodel.cn/api" --format json
+grok-search config set ZHIPU_SEARCH_ENGINE "search_pro" --format json
+grok-search config set TAVILY_API_URL "https://api.tavily.com" --format json
+grok-search config set TAVILY_TIMEOUT_SECONDS "45" --format json
+grok-search config set FIRECRAWL_API_URL "https://api.firecrawl.dev/v2" --format json
+grok-search model current --format json
+grok-search doctor --format json
+grok-search doctor --format markdown
+grok-search diagnose openai-compatible --format markdown
+grok-search regression
+grok-search smoke --mock --format json
+grok-search smoke --mock --format markdown
 ```
 
 Short aliases are supported for interactive use:
 
 ```powershell
-smart-search --v
-smart-search s "query" --format json
-smart-search s "nba战报" --format content
-smart-search f "https://example.com" --format markdown
-smart-search exa "OpenAI Responses API documentation" --format json
-smart-search z "today China AI news" --format json
-smart-search c7 "react" "hooks" --format json
-smart-search c7docs "/facebook/react" "useEffect cleanup" --format json
-smart-search cfg ls --format json
-smart-search d --format markdown
-smart-search mdl cur --format json
-smart-search sm --format json
-smart-search reg
+grok-search --v
+grok-search s "query" --format json
+grok-search s "nba战报" --format content
+grok-search f "https://example.com" --format markdown
+grok-search exa "OpenAI Responses API documentation" --format json
+grok-search z "today China AI news" --format json
+grok-search c7 "react" "hooks" --format json
+grok-search c7docs "/facebook/react" "useEffect cleanup" --format json
+grok-search cfg ls --format json
+grok-search d --format markdown
+grok-search mdl cur --format json
+grok-search sm --format json
+grok-search reg
 ```
 
 ## Timeout Retry Policy
 
-When `smart-search search` returns `ok: false` with `error_type: "network_error"` and an error message containing `timed out`, treat it as a retryable CLI-level timeout, not as a terminal research failure.
+When `grok-search search` returns `ok: false` with `error_type: "network_error"` and an error message containing `timed out`, treat it as a retryable CLI-level timeout, not as a terminal research failure.
 
 1. Retry up to 3 total attempts with `--timeout 180`, waiting about 5 seconds between attempts.
 2. Use `--format json` and `--output PATH` for each attempt; after each attempt, inspect the saved JSON and stop on the first `"ok": true`.
 3. Use `--extra-sources 1` during retry attempts to keep Tavily/Firecrawl overhead small.
-4. Always use the CLI's `--timeout` option. Do not wrap `smart-search` in a shell-level `timeout` command because shell termination can prevent the CLI from writing structured failure JSON.
+4. Always use the CLI's `--timeout` option. Do not wrap `grok-search` in a shell-level `timeout` command because shell termination can prevent the CLI from writing structured failure JSON.
 5. Do not rely on `SMART_SEARCH_RETRY_*` settings for this path; search command timeouts are surfaced by the CLI result contract and should be handled by the agent workflow.
 6. If all attempts time out, fall back to source-first evidence:
    - Run `exa-search` with the original query for broad source discovery.
@@ -308,12 +308,12 @@ When `smart-search search` returns `ok: false` with `error_type: "network_error"
 Example retry flow:
 
 ```powershell
-smart-search search "query" --validation balanced --extra-sources 1 --timeout 180 --format json --output result-attempt-1.json
-smart-search search "query" --validation balanced --extra-sources 1 --timeout 180 --format json --output result-attempt-2.json
-smart-search search "query" --validation balanced --extra-sources 1 --timeout 180 --format json --output result-attempt-3.json
-smart-search exa-search "query" --num-results 5 --include-text --format json --output exa.json
-smart-search exa-search "query" --include-domains platform.openai.com developers.openai.com --num-results 3 --include-text --format json --output exa-official.json
-smart-search fetch "https://example.com/source" --format markdown --output fetch.md
+grok-search search "query" --validation balanced --extra-sources 1 --timeout 180 --format json --output result-attempt-1.json
+grok-search search "query" --validation balanced --extra-sources 1 --timeout 180 --format json --output result-attempt-2.json
+grok-search search "query" --validation balanced --extra-sources 1 --timeout 180 --format json --output result-attempt-3.json
+grok-search exa-search "query" --num-results 5 --include-text --format json --output exa.json
+grok-search exa-search "query" --include-domains platform.openai.com developers.openai.com --num-results 3 --include-text --format json --output exa-official.json
+grok-search fetch "https://example.com/source" --format markdown --output fetch.md
 ```
 
 ## Guardrails
@@ -326,7 +326,7 @@ smart-search fetch "https://example.com/source" --format markdown --output fetch
 - Do not expose API keys. Treat `doctor` output as safe only because it is expected to mask secrets.
 - In this CLI-first workflow, native `web_search` is disabled unless the user explicitly configures another approved route.
 - If `doctor` or a command fails, report the failure and recovery steps; do not silently fall back to another web-search route.
-- If the user explicitly asks to bypass smart-search, state that another approved web-search route must be configured first.
+- If the user explicitly asks to bypass grok-search, state that another approved web-search route must be configured first.
 - Do not use legacy MCP tool names in prompts, notes, or generated instructions for this workflow.
 - Treat key rotation as a hard safety gate when previous key values were pasted into chat or logs.
 - For provider architecture maintenance, verify the distributable contract rather than the current developer machine's wrappers or local config. Keep fallback same-capability only.

@@ -2,45 +2,45 @@
 
 ## Entrypoints
 
-- `smart-search` is the primary CLI.
-- `smart-search --version`, `smart-search --v`, and `smart-search -v` print the installed version and exit with code `0`.
-- `smart-search` should resolve from the user's PATH.
+- `grok-search` is the primary CLI.
+- `grok-search --version`, `grok-search --v`, and `grok-search -v` print the installed version and exit with code `0`.
+- `grok-search` should resolve from the user's PATH.
 - This bundled skill is maintained with the `smartsearch` repository.
-- Private API keys should be saved with `smart-search setup` or `smart-search config set`.
+- Private API keys should be saved with `grok-search setup` or `grok-search config set`.
 - Environment variables remain supported for CI and advanced users, and override the local config file.
 - Do not depend on MCP inline `env` values or committed API-key environment variables for CLI use.
-- On Windows with mise, the managed package name is `npm:@konbakuyomu/smart-search`; the executable remains `smart-search`. Diagnose mise managed installs with `mise ls "npm:@konbakuyomu/smart-search"` and `mise which smart-search` (the bare name `smart-search` is the bin, not a mise tool identifier).
-- On Windows, the default config file is `%LOCALAPPDATA%\smart-search\config.json`. Linux/macOS default to `~/.config/smart-search/config.json`.
+- On Windows with mise, the managed package name is `npm:@konbakuyomu/grok-search`; the executable remains `grok-search`. Diagnose mise managed installs with `mise ls "npm:@konbakuyomu/grok-search"` and `mise which grok-search` (the bare name `grok-search` is the bin, not a mise tool identifier).
+- On Windows, the default config file is `%LOCALAPPDATA%\grok-search\config.json`. Linux/macOS default to `~/.config/grok-search/config.json`.
 - `SMART_SEARCH_CONFIG_DIR` is an advanced override for CI, containers, sandboxes, or portable installs. The CLI uses it for config and relative logs and skips default-directory selection.
-- Earlier Windows source defaults used `~\.config\smart-search\config.json`, while some installs were already pinned to `%LOCALAPPDATA%\smart-search` through `SMART_SEARCH_CONFIG_DIR`. If the new Windows default file is missing but the old file exists, the active config source is `legacy_windows_home` so upgrades do not silently lose configuration. Diagnostics must expose the override value and whether it matches the current default.
+- Earlier Windows source defaults used `~\.config\grok-search\config.json`, while some installs were already pinned to `%LOCALAPPDATA%\grok-search` through `SMART_SEARCH_CONFIG_DIR`. If the new Windows default file is missing but the old file exists, the active config source is `legacy_windows_home` so upgrades do not silently lose configuration. Diagnostics must expose the override value and whether it matches the current default.
 
 ## Commands
 
-- `smart-search search QUERY [--platform NAME] [--model ID] [--extra-sources N] [--validation fast|balanced|strict] [--fallback auto|off] [--providers auto|CSV] [--stream|--no-stream] [--timeout SECONDS] [--format json|markdown|content] [--output PATH]`
-- `smart-search fetch URL [--format json|markdown|content] [--output PATH]`
-- `smart-search exa-search QUERY [--num-results N] [--search-type neural|keyword|auto] [--include-text] [--include-highlights] [--start-published-date YYYY-MM-DD] [--include-domains DOMAIN...] [--exclude-domains DOMAIN...] [--category NAME] [--format json|markdown|content] [--output PATH]`
-- `smart-search exa-similar URL [--num-results N] [--format json|markdown|content] [--output PATH]`
-- `smart-search zhipu-search QUERY [--count N] [--search-engine NAME] [--search-recency-filter VALUE] [--search-domain-filter DOMAIN] [--content-size medium|high] [--format json|markdown|content] [--output PATH]`
-- `smart-search anysearch-domains [DOMAIN] [--format json|markdown|content] [--output PATH]`
-- `smart-search anysearch-search QUERY [--domain DOMAIN] [--sub-domain SUB_DOMAIN] [--max-results N] [--format json|markdown|content] [--output PATH]`
-- `smart-search anysearch-extract URL [--max-length N] [--format json|markdown|content] [--output PATH]`
-- `smart-search anysearch-batch QUERY... [--max-results N] [--format json|markdown|content] [--output PATH]`
-- `smart-search context7-library NAME [QUERY] [--format json|markdown|content] [--output PATH]`
-- `smart-search context7-docs LIBRARY_ID QUERY [--format json|markdown|content] [--output PATH]`
-- `smart-search deep QUERY [--budget quick|standard|deep] [--evidence-dir PATH] [--format json|markdown|content] [--output PATH]`
-- `smart-search map URL [--instructions TEXT] [--max-depth N] [--max-breadth N] [--limit N] [--timeout SECONDS] [--format json|markdown|content] [--output PATH]`
-- `smart-search doctor [--format json|markdown|content] [--output PATH]`
-- `smart-search diagnose openai-compatible [--timeout SECONDS] [--format json|markdown] [--output PATH]`
-- `smart-search setup [--lang zh|en] [--advanced] [--non-interactive] [--skip-skills] [--install-skills CSV] [--skills-root PATH] [--xai-api-url URL] [--xai-api-key KEY] [--xai-model ID] [--xai-tools-explicit CSV] [--openai-compatible-api-url URL] [--openai-compatible-api-key KEY] [--openai-compatible-model ID] [--openai-compatible-stream true|false] [--validation-level fast|balanced|strict] [--fallback-mode auto|off] [--minimum-profile standard|off] [--exa-key KEY] [--context7-key KEY] [--zhipu-key KEY] [--zhipu-api-url URL] [--zhipu-search-engine ENGINE] [--tavily-api-url URL] [--tavily-key KEY] [--firecrawl-api-url URL] [--firecrawl-key KEY] [--anysearch-api-url URL] [--anysearch-key KEY] [--anysearch-timeout SECONDS] [--format json|markdown|content] [--output PATH]`
-- `smart-search config path [--format json|markdown|content] [--output PATH]`
-- `smart-search config list [--format json|markdown|content] [--output PATH]`
-- `smart-search config set KEY VALUE [--format json|markdown|content] [--output PATH]`
-- `smart-search config unset KEY [--format json|markdown|content] [--output PATH]`
-- `smart-search model set MODEL [--format json|markdown|content] [--output PATH]`
-- `smart-search model current [--format json|markdown|content] [--output PATH]`
-- `smart-search regression`
-- `smart-search smoke [--mode mock|live] [--mock] [--live] [--format json|markdown|content] [--output PATH]`
-- `smart-search --version`
+- `grok-search search QUERY [--platform NAME] [--model ID] [--extra-sources N] [--validation fast|balanced|strict] [--fallback auto|off] [--providers auto|CSV] [--stream|--no-stream] [--timeout SECONDS] [--format json|markdown|content] [--output PATH]`
+- `grok-search fetch URL [--format json|markdown|content] [--output PATH]`
+- `grok-search exa-search QUERY [--num-results N] [--search-type neural|keyword|auto] [--include-text] [--include-highlights] [--start-published-date YYYY-MM-DD] [--include-domains DOMAIN...] [--exclude-domains DOMAIN...] [--category NAME] [--format json|markdown|content] [--output PATH]`
+- `grok-search exa-similar URL [--num-results N] [--format json|markdown|content] [--output PATH]`
+- `grok-search zhipu-search QUERY [--count N] [--search-engine NAME] [--search-recency-filter VALUE] [--search-domain-filter DOMAIN] [--content-size medium|high] [--format json|markdown|content] [--output PATH]`
+- `grok-search anysearch-domains [DOMAIN] [--format json|markdown|content] [--output PATH]`
+- `grok-search anysearch-search QUERY [--domain DOMAIN] [--sub-domain SUB_DOMAIN] [--max-results N] [--format json|markdown|content] [--output PATH]`
+- `grok-search anysearch-extract URL [--max-length N] [--format json|markdown|content] [--output PATH]`
+- `grok-search anysearch-batch QUERY... [--max-results N] [--format json|markdown|content] [--output PATH]`
+- `grok-search context7-library NAME [QUERY] [--format json|markdown|content] [--output PATH]`
+- `grok-search context7-docs LIBRARY_ID QUERY [--format json|markdown|content] [--output PATH]`
+- `grok-search deep QUERY [--budget quick|standard|deep] [--evidence-dir PATH] [--format json|markdown|content] [--output PATH]`
+- `grok-search map URL [--instructions TEXT] [--max-depth N] [--max-breadth N] [--limit N] [--timeout SECONDS] [--format json|markdown|content] [--output PATH]`
+- `grok-search doctor [--format json|markdown|content] [--output PATH]`
+- `grok-search diagnose openai-compatible [--timeout SECONDS] [--format json|markdown] [--output PATH]`
+- `grok-search setup [--lang zh|en] [--advanced] [--non-interactive] [--skip-skills] [--install-skills CSV] [--skills-root PATH] [--xai-api-url URL] [--xai-api-key KEY] [--xai-model ID] [--xai-tools-explicit CSV] [--openai-compatible-api-url URL] [--openai-compatible-api-key KEY] [--openai-compatible-model ID] [--openai-compatible-stream true|false] [--validation-level fast|balanced|strict] [--fallback-mode auto|off] [--minimum-profile standard|off] [--exa-key KEY] [--context7-key KEY] [--zhipu-key KEY] [--zhipu-api-url URL] [--zhipu-search-engine ENGINE] [--tavily-api-url URL] [--tavily-key KEY] [--firecrawl-api-url URL] [--firecrawl-key KEY] [--anysearch-api-url URL] [--anysearch-key KEY] [--anysearch-timeout SECONDS] [--format json|markdown|content] [--output PATH]`
+- `grok-search config path [--format json|markdown|content] [--output PATH]`
+- `grok-search config list [--format json|markdown|content] [--output PATH]`
+- `grok-search config set KEY VALUE [--format json|markdown|content] [--output PATH]`
+- `grok-search config unset KEY [--format json|markdown|content] [--output PATH]`
+- `grok-search model set MODEL [--format json|markdown|content] [--output PATH]`
+- `grok-search model current [--format json|markdown|content] [--output PATH]`
+- `grok-search regression`
+- `grok-search smoke [--mode mock|live] [--mock] [--live] [--format json|markdown|content] [--output PATH]`
+- `grok-search --version`
 
 ## Aliases
 
@@ -48,7 +48,7 @@ Top-level aliases must normalize to the same service behavior as their full comm
 
 | Full command | Aliases |
 | --- | --- |
-| `smart-search --version` | `smart-search --v`, `smart-search -v` |
+| `grok-search --version` | `grok-search --v`, `grok-search -v` |
 | `search` | `s` |
 | `fetch` | `f` |
 | `map` | `m` |
@@ -111,7 +111,7 @@ Zhipu Web Search API setup:
 - `ZHIPU_API_URL` defaults to `https://open.bigmodel.cn/api`.
 - `ZHIPU_SEARCH_ENGINE` defaults to `search_std`.
 - Official Web Search API service values include `search_std`, `search_pro`, `search_pro_sogou`, and `search_pro_quark`.
-- `smart-search setup --zhipu-api-url URL --zhipu-search-engine ENGINE` saves these values in non-interactive mode.
+- `grok-search setup --zhipu-api-url URL --zhipu-search-engine ENGINE` saves these values in non-interactive mode.
 - Interactive setup asks for Zhipu API key, API URL, and search service when optional `web_search` reinforcement selects Zhipu.
 - `config set ZHIPU_SEARCH_ENGINE VALUE` must remain free-form so newly added official services do not require a CLI release.
 - `zhipu-search` corresponds to Zhipu Web Search API, not Zhipu Chat Completions `tools=[web_search]`, not Search Agent, and not the MCP Server.
@@ -147,7 +147,7 @@ Context7 library output includes `ok`, `query`, `provider`, `results`, `total`, 
 
 Map output includes `ok`, `base_url`, `results`, `response_time`, `url`, and `elapsed_ms` when successful.
 
-Deep planner output includes `ok`, `mode`, `query_mode`, `question`, `trigger_source`, `difficulty`, `intent_signals`, `decomposition`, `capability_plan`, `evidence_policy`, `preflight`, `steps`, `gap_check`, `final_answer_policy`, `usage_boundary`, `allowed_tools`, `evidence_dir`, and `elapsed_ms`. `smart-search deep` is offline by default: `preflight.executed_by_deep_command=false`, no provider calls are made, and live research only happens when an AI agent or user executes `steps[].command`.
+Deep planner output includes `ok`, `mode`, `query_mode`, `question`, `trigger_source`, `difficulty`, `intent_signals`, `decomposition`, `capability_plan`, `evidence_policy`, `preflight`, `steps`, `gap_check`, `final_answer_policy`, `usage_boundary`, `allowed_tools`, `evidence_dir`, and `elapsed_ms`. `grok-search deep` is offline by default: `preflight.executed_by_deep_command=false`, no provider calls are made, and live research only happens when an AI agent or user executes `steps[].command`.
 
 Diagnostic output masks keys, reports `config_file` / `config_dir` / `config_dir_source` / `default_config_file` / Windows legacy config metadata / `config_dir_override_value` / `config_dir_override_matches_default` / `log_dir_config_value` / `resolved_log_dir` / `file_logging_enabled` / `config_sources` / `primary_api_mode` / `primary_api_mode_source` / provider timeout values / `capability_status` / `minimum_profile_ok`, and includes `main_search_connection_tests` plus connection test objects for Exa, Tavily, Zhipu, Context7, and Firecrawl. `primary_connection_test` remains as a backward-compatible alias for the first configured main provider check. OpenAI-compatible provider health must be validated through `/chat/completions`; `/models` is supplementary metadata and must not be the health gate. Firecrawl currently reports whether `FIRECRAWL_API_KEY` is configured; it is not a live Firecrawl request.
 
@@ -157,11 +157,11 @@ Smoke output includes `ok`, `mode`, `failed_cases`, `cases`, `provider_attempts`
 
 ## Deep Research Skill Contract
 
-Deep Research is an optional capability orchestration workflow for prompts such as `深度搜索`, `深度调研`, `深入搜索`, `deep search`, `deep research`, multi-source verification, cross-checking, serious review, and selection/comparison research. `smart-search deep` is the public offline planner command for this workflow. It must not change default `smart-search search` behavior and must not execute live providers by default. The AI agent reads the generated plan, composes existing CLI commands, and lets the CLI perform execution and write JSON/Markdown evidence.
+Deep Research is an optional capability orchestration workflow for prompts such as `深度搜索`, `深度调研`, `深入搜索`, `deep search`, `deep research`, multi-source verification, cross-checking, serious review, and selection/comparison research. `grok-search deep` is the public offline planner command for this workflow. It must not change default `grok-search search` behavior and must not execute live providers by default. The AI agent reads the generated plan, composes existing CLI commands, and lets the CLI perform execution and write JSON/Markdown evidence.
 
 Deep Research must not require fixed topic recipe ids such as `current_market_research`, `product_comparison_research`, `technical_docs_research`, `news_or_policy_research`, `claim_verification_research`, or `url_first_research`. Those phrases may appear as prompt examples, but they are not schema modes or routing enums.
 
-Before execution, the skill should call `smart-search deep "question" --format json` to create a `research_plan` JSON artifact. Required fields are:
+Before execution, the skill should call `grok-search deep "question" --format json` to create a `research_plan` JSON artifact. Required fields are:
 
 - `mode`: always `deep_research`.
 - `query_mode`: always `deep`.
@@ -178,7 +178,7 @@ Before execution, the skill should call `smart-search deep "question" --format j
 - `final_answer_policy`: how to cite fetched evidence and list unverified candidates.
 - `usage_boundary`: user-facing distinction between fast live `search`, offline `deep` planning, and later step execution.
 
-Each `steps[]` item must include `id`, `subquestion_id`, `tool`, `purpose`, `command`, and `output_path`. Allowed `tool` values are `search`, `exa-search`, `exa-similar`, `zhipu-search`, `context7-library`, `context7-docs`, `fetch`, and `map`; these map to existing CLI commands only. `doctor` is a `preflight` action, not a `steps[]` item. Use `C:\tmp\smart-search-evidence\<timestamp>-<slug>\` or an equivalent absolute evidence directory for `output_path` values.
+Each `steps[]` item must include `id`, `subquestion_id`, `tool`, `purpose`, `command`, and `output_path`. Allowed `tool` values are `search`, `exa-search`, `exa-similar`, `zhipu-search`, `context7-library`, `context7-docs`, `fetch`, and `map`; these map to existing CLI commands only. `doctor` is a `preflight` action, not a `steps[]` item. Use `C:\tmp\grok-search-evidence\<timestamp>-<slug>\` or an equivalent absolute evidence directory for `output_path` values.
 
 Capability boundaries:
 
@@ -194,9 +194,9 @@ Capability boundaries:
 
 Default Deep Research orchestration:
 
-1. Run `smart-search doctor --format json` as preflight when configuration is uncertain.
-2. Call `smart-search deep "question" --format json` to generate `intent_signals`, `decomposition`, and `capability_plan` instead of selecting a fixed topic recipe.
-3. Use planned `smart-search search ... --validation balanced --extra-sources 1..3` steps for broad discovery.
+1. Run `grok-search doctor --format json` as preflight when configuration is uncertain.
+2. Call `grok-search deep "question" --format json` to generate `intent_signals`, `decomposition`, and `capability_plan` instead of selecting a fixed topic recipe.
+3. Use planned `grok-search search ... --validation balanced --extra-sources 1..3` steps for broad discovery.
 4. Add planned `zhipu-search` for Chinese/current/domestic topics, `context7-library` plus `context7-docs` for docs/API/library topics, `exa-search` for official/trusted-domain or paper discovery, `exa-similar` for URL-neighbor discovery, or `map` only when the capability boundary matches the intent.
 5. Use `fetch` for key URLs before making claim-level statements.
 6. Run `gap_check`: fetch missing evidence for key claims or downgrade them to unverified candidates.
@@ -215,13 +215,13 @@ Setup and config output should include `ok` and `config_file`. Saved API keys mu
 
 Interactive setup behavior:
 
-- Default `smart-search setup` shows a Smart Search ASCII banner, asks for `zh`
-  or `en`, offers user-level `smart-search-cli` skill installation, then
+- Default `grok-search setup` shows a Smart Search ASCII banner, asks for `zh`
+  or `en`, offers user-level `grok-search-cli` skill installation, then
   shows a grouped provider wizard.
 - The grouped wizard should use an arrow-key / Space / Enter selector when the
   packaged TUI dependencies are available, with a text fallback for non-TTY
   and tests.
-- Skill installation installs the bundled `smart-search-cli` skill into
+- Skill installation installs the bundled `grok-search-cli` skill into
   selected AI-tool skill directories and must not run `trellis init`, create
   hooks, create agents, create commands, or modify other skills. Targets are
   user-level/global directories under the current user's home directory, for
@@ -235,20 +235,20 @@ Interactive setup behavior:
   explicitly, and `--skills-root PATH` is an advanced override for the
   user-level install root used in portable installs or tests. Normal users
   should omit it.
-- `smart-search skills status --targets codex,claude,cursor,hermes --format json`
+- `grok-search skills status --targets codex,claude,cursor,hermes --format json`
   compares bundled skill files with installed user-level skill directories.
   Status values are `missing`, `up_to_date`, `stale`, `extra_files`, and
   `error`. It reports target paths, bundled file count, installed file count,
   hashes, hash match flags, missing files, stale files, and extra files. It
   must not write or delete files.
-- `smart-search skills update --targets codex,claude,cursor,hermes --format json`
-  overwrites the managed bundled `smart-search-cli` files for selected
-  targets. `smart-search skills update --all --format json` selects every
+- `grok-search skills update --targets codex,claude,cursor,hermes --format json`
+  overwrites the managed bundled `grok-search-cli` files for selected
+  targets. `grok-search skills update --all --format json` selects every
   target id. This daily sync path must not change provider keys, run setup
   prompts, create Trellis files, create hooks, create agents, create commands,
   or delete leftover files. Extra installed files are only reported by
   `skills status`.
-- `smart-search setup --non-interactive --install-skills codex` remains the
+- `grok-search setup --non-interactive --install-skills codex` remains the
   first-time setup compatibility path. Prefer `skills status` and
   `skills update` for routine global skill synchronization after CLI upgrades.
 - Required groups are `main_search`, `docs_search`, and `web_fetch`; `web_search` is optional reinforcement.
@@ -256,7 +256,7 @@ Interactive setup behavior:
 - `--advanced` shows low-level config keys one by one for compatibility with older setup behavior and does not show the skill prompt unless `--install-skills` is explicit.
 - `--non-interactive` keeps script behavior and only saves values passed as flags.
 - Unchecking a configured provider must not delete existing config values; use
-  `smart-search config unset KEY` for deletion.
+  `grok-search config unset KEY` for deletion.
 - Interactive output should summarize `minimum_profile_ok`, missing required capabilities, and next-step commands.
 - Beginner filling examples for official-service and relay/pooled-endpoint
   minimum profiles must appear in the grouped wizard on stderr, not stdout.
@@ -284,7 +284,7 @@ Search timeout output uses `ok=false`, `error_type=network_error`, includes the 
 Agent timeout handling contract:
 
 - A `search` result with `ok=false`, `error_type=network_error`, and an `error` message containing `timed out` is retryable at the orchestration layer.
-- Agents should retry up to 3 total attempts with `smart-search search ... --timeout 180 --extra-sources 1 --format json --output PATH`, waiting about 5 seconds between attempts and stopping as soon as the saved JSON has `"ok": true`.
+- Agents should retry up to 3 total attempts with `grok-search search ... --timeout 180 --extra-sources 1 --format json --output PATH`, waiting about 5 seconds between attempts and stopping as soon as the saved JSON has `"ok": true`.
 - Agents must use the CLI `--timeout` option, not a shell-level `timeout` wrapper, so timeout failures remain structured JSON with exit code `4`.
 - `SMART_SEARCH_RETRY_*` settings are not the contract for this path; the visible CLI result is the contract.
 - After repeated timeout failures, agents should switch to source-first fallback: `exa-search` for broad source discovery, `exa-search --include-domains` for likely official domains, then `fetch` key URLs before claim-level conclusions.
@@ -338,7 +338,7 @@ Agent timeout handling contract:
 - Keep xAI Responses and OpenAI-compatible as peer `main_search` providers. A failed xAI Responses request may fall back to OpenAI-compatible only when `OPENAI_COMPATIBLE_API_URL` and `OPENAI_COMPATIBLE_API_KEY` are separately configured.
 - Do not use Context7 for broad news or generic web facts; do not use Tavily or Firecrawl as documentation semantic-search replacements.
 - Standard installs must fail closed unless `main_search`, `docs_search`, and fetch capability each have at least one configured provider.
-- After provider-routing changes, run source-checkout regression plus `smart-search smoke --mock --format json`. If live keys were used, run a targeted secret scan for exact key substrings before committing.
+- After provider-routing changes, run source-checkout regression plus `grok-search smoke --mock --format json`. If live keys were used, run a targeted secret scan for exact key substrings before committing.
 
 ## Exit Codes
 
@@ -351,7 +351,7 @@ Agent timeout handling contract:
 
 ## Regression
 
-Run `smart-search regression` before considering CLI or skill changes complete.
+Run `grok-search regression` before considering CLI or skill changes complete.
 
 - In a source checkout, it runs offline pytest coverage for CLI, service, smoke, provider, and skill contract behavior.
 - In npm / mise packaged installs, repository test files are not bundled; since v0.1.8 it falls back to built-in mock smoke regression so users can still verify installed CLI health.
@@ -368,12 +368,12 @@ Run `smart-search regression` before considering CLI or skill changes complete.
 
 ### Release Closeout Lessons
 
-- Always read back npm before and after publishing with `npm view @konbakuyomu/smart-search versions --json` and `npm view @konbakuyomu/smart-search dist-tags --json`. A test release must leave `latest` on the stable version and move only `next` or the explicitly supplied non-`latest` tag.
+- Always read back npm before and after publishing with `npm view @konbakuyomu/grok-search versions --json` and `npm view @konbakuyomu/grok-search dist-tags --json`. A test release must leave `latest` on the stable version and move only `next` or the explicitly supplied non-`latest` tag.
 - Backfill jobs can publish npm successfully even if GitHub release creation fails because the workflow token cannot access the release API. In that case, leave npm intact and create the missing GitHub prerelease with authenticated local `gh release create ... --prerelease --latest=false`.
 - If concurrent backfill jobs hit npm `E409`, re-dispatch only the affected versions serially after checking whether the version already appeared in the registry.
 - Finish with a diff-style gap check: expected beta version list minus npm versions equals empty, and expected `vX.Y.Z-beta.N` list minus GitHub prereleases equals empty.
-- Local verification after a test release must use an exact install target, such as `mise use -g "npm:@konbakuyomu/smart-search@0.1.10-beta.3" -y --pin`, followed by `mise reshim`, `where.exe smart-search`, `smart-search --version`, packaged `smart-search regression`, and `smart-search smoke --mock --format json`. Also pipe a non-ASCII JSON command such as `smart-search deep "深度搜索一下最近的比特币行情" --format json | ConvertFrom-Json` to verify the Windows npm/mise wrapper is emitting UTF-8 JSON, not locale-encoded bytes.
+- Local verification after a test release must use an exact install target, such as `mise use -g "npm:@konbakuyomu/grok-search@0.1.10-beta.3" -y --pin`, followed by `mise reshim`, `where.exe grok-search`, `grok-search --version`, packaged `grok-search regression`, and `grok-search smoke --mock --format json`. Also pipe a non-ASCII JSON command such as `grok-search deep "深度搜索一下最近的比特币行情" --format json | ConvertFrom-Json` to verify the Windows npm/mise wrapper is emitting UTF-8 JSON, not locale-encoded bytes.
 
 ## Tool Policy
 
-Web research through this skill should use `smart-search` CLI. If the CLI is unavailable, report the blocker and recovery steps instead of silently falling back to another web-search route.
+Web research through this skill should use `grok-search` CLI. If the CLI is unavailable, report the blocker and recovery steps instead of silently falling back to another web-search route.

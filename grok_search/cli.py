@@ -113,7 +113,7 @@ def _get_version() -> str:
         pass
 
     try:
-        return metadata.version("smart-search")
+        return metadata.version("grok-search")
     except metadata.PackageNotFoundError:
         pass
 
@@ -176,8 +176,8 @@ def _search_timeout_result(query: str, timeout: float, search_kwargs: dict[str, 
         "provider": search_kwargs.get("providers", "auto"),
         "model": model,
         "stream": stream,
-        "diagnose_command": "smart-search diagnose openai-compatible --format markdown",
-        "recommendation": "Run `smart-search diagnose openai-compatible --format markdown` to check whether OpenAI-compatible stream/no-stream search requests are hanging upstream.",
+        "diagnose_command": "grok-search diagnose openai-compatible --format markdown",
+        "recommendation": "Run `grok-search diagnose openai-compatible --format markdown` to check whether OpenAI-compatible stream/no-stream search requests are hanging upstream.",
     }
 
 
@@ -384,7 +384,7 @@ def _format_doctor_markdown(data: dict[str, Any]) -> str:
             )
     if data.get("config_dir_source") == "legacy_windows_home":
         lines.append(
-            "Active config is using the old Windows `~\\.config\\smart-search` location because the new default file does not exist."
+            "Active config is using the old Windows `~\\.config\\grok-search` location because the new default file does not exist."
         )
     missing = data.get("minimum_profile_missing") or []
     if missing:
@@ -947,7 +947,7 @@ def _write_stderr(text: str) -> None:
     sys.stderr.write(_stream_safe(sys.stderr, text))
 
 
-def _smart_search_banner_text() -> str:
+def _grok_search_banner_text() -> str:
     try:
         import pyfiglet
 
@@ -958,7 +958,7 @@ def _smart_search_banner_text() -> str:
 
 
 def _write_setup_banner(lang: str) -> None:
-    banner = _smart_search_banner_text()
+    banner = _grok_search_banner_text()
     tagline = _t(lang, "CLI-first multi-source search for AI agents", "CLI-first multi-source search for AI agents")
     _write_stderr(f"\n{banner}\n\n   Smart Search\n   {tagline}\n")
 
@@ -1358,8 +1358,8 @@ def _prompt_skill_targets(lang: str) -> list[str]:
     _write_stderr(
         _t(
             lang,
-            "\n[可选] 安装 smart-search-cli skill\n用途: 让本机全局 AI 工具知道优先调用 smart-search CLI。\n提示: 只安装 Smart Search skill；不会初始化 Trellis，也不会生成 hooks、agents 或 commands。\n",
-            "\n[Optional] Install the smart-search-cli skill\nPurpose: teach user-level AI tools on this machine to call the smart-search CLI first.\nNote: this only installs the Smart Search skill; it does not initialize Trellis or generate hooks, agents, or commands.\n",
+            "\n[可选] 安装 grok-search-cli skill\n用途: 让本机全局 AI 工具知道优先调用 grok-search CLI。\n提示: 只安装 Smart Search skill；不会初始化 Trellis，也不会生成 hooks、agents 或 commands。\n",
+            "\n[Optional] Install the grok-search-cli skill\nPurpose: teach user-level AI tools on this machine to call the grok-search CLI first.\nNote: this only installs the Smart Search skill; it does not initialize Trellis or generate hooks, agents, or commands.\n",
         )
     )
     tui_value = _checkbox_with_tui(
@@ -1738,8 +1738,8 @@ def _write_setup_keep_note(lang: str) -> None:
     _write_stderr(
         _t(
             lang,
-            "\n提示: setup 不会删除旧配置；删除请运行 `smart-search config unset KEY`。\n",
-            "\nNote: setup does not delete saved values; use `smart-search config unset KEY` to remove one.\n",
+            "\n提示: setup 不会删除旧配置；删除请运行 `grok-search config unset KEY`。\n",
+            "\nNote: setup does not delete saved values; use `grok-search config unset KEY` to remove one.\n",
         )
     )
 
@@ -2106,8 +2106,8 @@ def _run_setup(args: argparse.Namespace) -> int:
             _write_stderr(
                 _t(
                     lang,
-                    "\n下一步建议:\n  smart-search doctor --format json\n  smart-search smoke --mock --format json\n",
-                    "\nNext steps:\n  smart-search doctor --format json\n  smart-search smoke --mock --format json\n",
+                    "\n下一步建议:\n  grok-search doctor --format json\n  grok-search smoke --mock --format json\n",
+                    "\nNext steps:\n  grok-search doctor --format json\n  grok-search smoke --mock --format json\n",
                 )
             )
         data["minimum_profile_ok"] = not missing
@@ -2140,7 +2140,7 @@ async def _run_regression_smoke_fallback() -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = SmartSearchArgumentParser(
-        prog="smart-search",
+        prog="grok-search",
         description="Smart Search CLI for AI-agent web research.",
     )
     parser.add_argument("-v", "--v", "--version", action="version", version=f"%(prog)s {_get_version()}")
@@ -2331,7 +2331,7 @@ def build_parser() -> argparse.ArgumentParser:
     skills_parser = sub.add_parser(
         "skills",
         aliases=COMMAND_ALIASES["skills"],
-        help="Inspect or update installed smart-search-cli skills.",
+        help="Inspect or update installed grok-search-cli skills.",
     )
     skills_parser.set_defaults(command="skills")
     skills_sub = skills_parser.add_subparsers(dest="skills_command", required=True, parser_class=SmartSearchArgumentParser)
@@ -2371,11 +2371,11 @@ def build_parser() -> argparse.ArgumentParser:
     setup_parser.add_argument("--non-interactive", action="store_true", help="Only save values passed as flags.")
     setup_parser.add_argument("--lang", choices=["zh", "en"], default="", help="Interactive setup language.")
     setup_parser.add_argument("--advanced", action="store_true", help="Show every low-level config key in interactive setup.")
-    setup_parser.add_argument("--skip-skills", action="store_true", help="Skip user-level smart-search-cli skill installation.")
+    setup_parser.add_argument("--skip-skills", action="store_true", help="Skip user-level grok-search-cli skill installation.")
     setup_parser.add_argument(
         "--install-skills",
         default="",
-        help="Comma-separated AI tool targets for smart-search-cli skill installation, e.g. codex,claude,cursor,hermes.",
+        help="Comma-separated AI tool targets for grok-search-cli skill installation, e.g. codex,claude,cursor,hermes.",
     )
     setup_parser.add_argument(
         "--skills-root",

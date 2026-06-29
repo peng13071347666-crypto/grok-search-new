@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from .config import config
 
-logger = logging.getLogger("smart_search")
+logger = logging.getLogger("grok_search")
 logger.setLevel(getattr(logging, config.log_level))
 logger.addHandler(logging.NullHandler())
 
@@ -20,7 +20,7 @@ def _configure_file_logging() -> None:
 
     log_dir = config.log_dir
     log_dir.mkdir(parents=True, exist_ok=True)
-    log_file = log_dir / f"smart_search_{datetime.now().strftime('%Y%m%d')}.log"
+    log_file = log_dir / f"grok_search_{datetime.now().strftime('%Y%m%d')}.log"
 
     file_handler = logging.FileHandler(log_file, encoding="utf-8")
     file_handler.setLevel(getattr(logging, config.log_level))

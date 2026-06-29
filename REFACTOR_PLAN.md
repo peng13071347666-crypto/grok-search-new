@@ -466,7 +466,7 @@
 - ✅ 不删除/重命名现有字段
 - ✅ 不改现有 CLI 命令的行为
 - ✅ 不改 `_call_grok_search()` 内部
-- ✅ 不改 smart_search 模块
+- ✅ 不改 grok_search 模块
 - ✅ SKILL.md 描述与实际行为一致
 
 ---

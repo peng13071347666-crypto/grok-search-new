@@ -29,7 +29,7 @@ SOURCE_PROVENANCE_WARNING = (
 MINIMUM_PROFILE_ERROR = (
     "最低配置不满足：必须至少配置 main_search、docs_search、web_fetch 三类能力各一个 provider。"
 )
-OPENAI_COMPATIBLE_DIAGNOSE_COMMAND = "smart-search diagnose openai-compatible --format markdown"
+OPENAI_COMPATIBLE_DIAGNOSE_COMMAND = "grok-search diagnose openai-compatible --format markdown"
 DOCS_INTENT_KEYWORDS = {
     "api",
     "sdk",
@@ -312,7 +312,7 @@ def _slugify_query(query: str) -> str:
 
 def _default_evidence_dir(query: str) -> str:
     timestamp = time.strftime("%Y%m%d-%H%M")
-    return str(Path("C:/tmp/smart-search-evidence") / f"{timestamp}-{_slugify_query(query)}")
+    return str(Path("C:/tmp/grok-search-evidence") / f"{timestamp}-{_slugify_query(query)}")
 
 
 def _quote_arg(value: str) -> str:
@@ -414,16 +414,16 @@ def build_deep_research_plan(query: str, budget: str = "standard", evidence_dir:
         return f"{len(steps) + 1:02d}-{suffix}"
 
     def command_search(q: str, extra_sources: int = 2) -> str:
-        return f"smart-search search {_quote_arg(q)} --validation balanced --extra-sources {extra_sources} --format json --output {_quote_arg(_path_join(evidence_root, next_filename('search.json')))}"
+        return f"grok-search search {_quote_arg(q)} --validation balanced --extra-sources {extra_sources} --format json --output {_quote_arg(_path_join(evidence_root, next_filename('search.json')))}"
 
     def command_exa(q: str) -> str:
-        return f"smart-search exa-search {_quote_arg(q)} --num-results 5 --format json --output {_quote_arg(_path_join(evidence_root, next_filename('exa.json')))}"
+        return f"grok-search exa-search {_quote_arg(q)} --num-results 5 --format json --output {_quote_arg(_path_join(evidence_root, next_filename('exa.json')))}"
 
     def command_zhipu(q: str) -> str:
-        return f"smart-search zhipu-search {_quote_arg(q)} --count 5 --format json --output {_quote_arg(_path_join(evidence_root, next_filename('zhipu.json')))}"
+        return f"grok-search zhipu-search {_quote_arg(q)} --count 5 --format json --output {_quote_arg(_path_join(evidence_root, next_filename('zhipu.json')))}"
 
     def command_fetch(target: str = "<key-url>") -> str:
-        return f"smart-search fetch {_quote_arg(target)} --format markdown --output {_quote_arg(_path_join(evidence_root, next_filename('fetch.md')))}"
+        return f"grok-search fetch {_quote_arg(target)} --format markdown --output {_quote_arg(_path_join(evidence_root, next_filename('fetch.md')))}"
 
     def has_capability(name: str) -> bool:
         return any(item.get("capability") == name for item in capability_plan)
@@ -455,8 +455,8 @@ def build_deep_research_plan(query: str, budget: str = "standard", evidence_dir:
                 _deep_capability("broad_discovery", ["search"], "Broaden the context if the fetched page leaves gaps."),
             ]
         )
-        add_step("sq1", "fetch", "fetch user supplied URL first", f"smart-search fetch {_quote_arg(url)} --format markdown --output {_quote_arg(_path_join(evidence_root, '01-fetch.md'))}", "01-fetch.md")
-        add_step("sq2", "exa-similar", "find adjacent sources from the provided URL", f"smart-search exa-similar {_quote_arg(url)} --num-results 5 --format json --output {_quote_arg(_path_join(evidence_root, '02-similar.json'))}", "02-similar.json")
+        add_step("sq1", "fetch", "fetch user supplied URL first", f"grok-search fetch {_quote_arg(url)} --format markdown --output {_quote_arg(_path_join(evidence_root, '01-fetch.md'))}", "01-fetch.md")
+        add_step("sq2", "exa-similar", "find adjacent sources from the provided URL", f"grok-search exa-similar {_quote_arg(url)} --num-results 5 --format json --output {_quote_arg(_path_join(evidence_root, '02-similar.json'))}", "02-similar.json")
         add_step("sq2", "search", "broad discovery for missing context", command_search(question, 1), "03-search.json")
     else:
         decomposition.append(
@@ -491,14 +491,14 @@ def build_deep_research_plan(query: str, budget: str = "standard", evidence_dir:
                 "sq2",
                 "context7-library",
                 "resolve library id for docs/API intent",
-                f"smart-search context7-library {_quote_arg(library_hint)} {_quote_arg(question)} --format json --output {_quote_arg(_path_join(evidence_root, next_filename('context7-library.json')))}",
+                f"grok-search context7-library {_quote_arg(library_hint)} {_quote_arg(question)} --format json --output {_quote_arg(_path_join(evidence_root, next_filename('context7-library.json')))}",
                 next_filename("context7-library.json"),
             )
             add_step(
                 "sq2",
                 "context7-docs",
                 "retrieve docs after selecting the best library_id",
-                f"smart-search context7-docs {_quote_arg('<library_id>')} {_quote_arg(question)} --format json --output {_quote_arg(_path_join(evidence_root, next_filename('context7-docs.json')))}",
+                f"grok-search context7-docs {_quote_arg('<library_id>')} {_quote_arg(question)} --format json --output {_quote_arg(_path_join(evidence_root, next_filename('context7-docs.json')))}",
                 next_filename("context7-docs.json"),
             )
             if _contains_any(question, DEEP_EXA_DISCOVERY_KEYWORDS):
@@ -585,7 +585,7 @@ def build_deep_research_plan(query: str, budget: str = "standard", evidence_dir:
             if first_fetch:
                 first_fetch = dict(first_fetch)
                 fetch_path = _path_join(evidence_root, "04-fetch.md")
-                first_fetch["command"] = f"smart-search fetch {_quote_arg('<key-url>')} --format markdown --output {_quote_arg(fetch_path)}"
+                first_fetch["command"] = f"grok-search fetch {_quote_arg('<key-url>')} --format markdown --output {_quote_arg(fetch_path)}"
                 first_fetch["output_path"] = fetch_path
                 limited_steps = steps[:3] + [first_fetch]
         steps = limited_steps[:4]
@@ -610,7 +610,7 @@ def build_deep_research_plan(query: str, budget: str = "standard", evidence_dir:
         "evidence_policy": "fetch_before_claim",
         "preflight": {
             "tool": "doctor",
-            "command": "smart-search doctor --format json",
+            "command": "grok-search doctor --format json",
             "when": "configuration or provider availability is uncertain",
             "executed_by_deep_command": False,
         },
@@ -622,8 +622,8 @@ def build_deep_research_plan(query: str, budget: str = "standard", evidence_dir:
         },
         "final_answer_policy": "cite fetched evidence, list unverified candidates, and include key commands",
         "usage_boundary": {
-            "search": "smart-search search runs live fast/broad search immediately.",
-            "deep": "smart-search deep is an offline planner; it does not execute provider calls or fetch pages.",
+            "search": "grok-search search runs live fast/broad search immediately.",
+            "deep": "grok-search deep is an offline planner; it does not execute provider calls or fetch pages.",
             "execution": "An AI agent or user executes the listed steps with existing CLI commands, then performs gap_check.",
         },
         "allowed_tools": sorted(DEEP_ALLOWED_TOOLS),
@@ -1118,7 +1118,7 @@ async def call_tavily_map(
         return {
             "ok": False,
             "error_type": "config_error",
-            "error": "TAVILY_API_KEY 未配置。请运行 `smart-search setup`，或使用 `smart-search config set TAVILY_API_KEY <key>`。",
+            "error": "TAVILY_API_KEY 未配置。请运行 `grok-search setup`，或使用 `grok-search config set TAVILY_API_KEY <key>`。",
         }
 
     endpoint = f"{config.tavily_api_url.rstrip('/')}/map"
@@ -1526,7 +1526,7 @@ async def exa_search(
         return {
             "ok": False,
             "error_type": "config_error",
-            "error": "EXA_API_KEY 未配置。请运行 `smart-search setup`，或使用 `smart-search config set EXA_API_KEY <key>`。",
+            "error": "EXA_API_KEY 未配置。请运行 `grok-search setup`，或使用 `grok-search config set EXA_API_KEY <key>`。",
         }
 
     provider = ExaSearchProvider(config.exa_base_url, api_key, config.exa_timeout)
@@ -1593,7 +1593,7 @@ async def exa_find_similar(url: str, num_results: int = 5) -> dict[str, Any]:
         return {
             "ok": False,
             "error_type": "config_error",
-            "error": "EXA_API_KEY 未配置。请运行 `smart-search setup`，或使用 `smart-search config set EXA_API_KEY <key>`。",
+            "error": "EXA_API_KEY 未配置。请运行 `grok-search setup`，或使用 `grok-search config set EXA_API_KEY <key>`。",
         }
 
     provider = ExaSearchProvider(config.exa_base_url, api_key, config.exa_timeout)
@@ -1620,7 +1620,7 @@ async def zhipu_search(
         return {
             "ok": False,
             "error_type": "config_error",
-            "error": "ZHIPU_API_KEY 未配置。请运行 `smart-search setup`，或使用 `smart-search config set ZHIPU_API_KEY <key>`。",
+            "error": "ZHIPU_API_KEY 未配置。请运行 `grok-search setup`，或使用 `grok-search config set ZHIPU_API_KEY <key>`。",
         }
     provider = ZhipuWebSearchProvider(
         config.zhipu_api_url,
@@ -1651,7 +1651,7 @@ async def context7_library(name: str, query: str = "") -> dict[str, Any]:
         return {
             "ok": False,
             "error_type": "config_error",
-            "error": "CONTEXT7_API_KEY 未配置。请运行 `smart-search setup`，或使用 `smart-search config set CONTEXT7_API_KEY <key>`。",
+            "error": "CONTEXT7_API_KEY 未配置。请运行 `grok-search setup`，或使用 `grok-search config set CONTEXT7_API_KEY <key>`。",
         }
     provider = Context7Provider(config.context7_base_url, api_key, config.context7_timeout)
     raw = await provider.library(name, query)
@@ -1670,7 +1670,7 @@ async def context7_docs(library_id: str, query: str) -> dict[str, Any]:
         return {
             "ok": False,
             "error_type": "config_error",
-            "error": "CONTEXT7_API_KEY 未配置。请运行 `smart-search setup`，或使用 `smart-search config set CONTEXT7_API_KEY <key>`。",
+            "error": "CONTEXT7_API_KEY 未配置。请运行 `grok-search setup`，或使用 `grok-search config set CONTEXT7_API_KEY <key>`。",
         }
     provider = Context7Provider(config.context7_base_url, api_key, config.context7_timeout)
     raw = await provider.docs(library_id, query)
@@ -1761,25 +1761,25 @@ def _openai_compatible_diagnosis(quick: dict[str, Any], no_stream: dict[str, Any
         return (
             False,
             "非流式请求不稳定，流式请求可用。",
-            "建议设置 `OPENAI_COMPATIBLE_STREAM=true`，或临时使用 `smart-search search ... --stream`。",
+            "建议设置 `OPENAI_COMPATIBLE_STREAM=true`，或临时使用 `grok-search search ... --stream`。",
         )
     if no_stream_ok and not stream_ok:
         return (
             False,
             "流式请求不稳定，非流式请求可用。",
-            "建议设置 `OPENAI_COMPATIBLE_STREAM=false`，或临时使用 `smart-search search ... --no-stream`。",
+            "建议设置 `OPENAI_COMPATIBLE_STREAM=false`，或临时使用 `grok-search search ... --no-stream`。",
         )
     if quick_ok and search_timeout:
         return (
             False,
             "小请求能通，但真实 search 形态超时。",
-            "这通常是上游模型或中转站在处理 smart-search 的完整 prompt 时卡住；建议换模型/中转，或把本诊断报告贴给维护者。",
+            "这通常是上游模型或中转站在处理 grok-search 的完整 prompt 时卡住；建议换模型/中转，或把本诊断报告贴给维护者。",
         )
     if quick_ok:
         return (
             False,
             "小请求能通，但真实 search 形态失败。",
-            "这更像上游模型/中转站对 smart-search 请求形态不兼容；建议换模型/中转，或把本诊断报告贴给维护者。",
+            "这更像上游模型/中转站对 grok-search 请求形态不兼容；建议换模型/中转，或把本诊断报告贴给维护者。",
         )
     return (
         False,
@@ -1810,7 +1810,7 @@ async def _probe_openai_compatible_search_shape(
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
         "Accept": "application/json, text/event-stream",
-        "User-Agent": "smart-search/diagnose",
+        "User-Agent": "grok-search/diagnose",
     }
     timeout = httpx.Timeout(connect=6.0, read=timeout_seconds, write=10.0, pool=None)
     try:
@@ -1939,7 +1939,7 @@ async def diagnose_openai_compatible(timeout_seconds: float = 30.0) -> dict[str,
                 "error_type": "config_error",
                 "error": "缺少 OpenAI-compatible 配置: " + ", ".join(missing),
                 "summary": "OpenAI-compatible 配置不完整。",
-                "recommendation": "请先运行 `smart-search setup`，或用 `smart-search config set` 填好缺失项。",
+                "recommendation": "请先运行 `grok-search setup`，或用 `grok-search config set` 填好缺失项。",
                 "missing": missing,
                 "elapsed_ms": _elapsed_ms(start),
             }
@@ -2229,8 +2229,8 @@ def set_model(model: str) -> dict[str, Any]:
         "ok": False,
         "error_type": "parameter_error",
         "error": (
-            "The legacy default model command was removed. Use `smart-search config set XAI_MODEL <model>` "
-            "or `smart-search config set OPENAI_COMPATIBLE_MODEL <model>`."
+            "The legacy default model command was removed. Use `grok-search config set XAI_MODEL <model>` "
+            "or `grok-search config set OPENAI_COMPATIBLE_MODEL <model>`."
         ),
         "config_file": str(config.config_file),
     }
@@ -2421,7 +2421,7 @@ async def _smoke_mock(start: float) -> dict[str, Any]:
         "gap_check",
         "final_answer_policy",
     }
-    market_plan = build_deep_research_plan("深度搜索一下最近的比特币行情", evidence_dir=r"C:\tmp\smart-search-evidence\market")
+    market_plan = build_deep_research_plan("深度搜索一下最近的比特币行情", evidence_dir=r"C:\tmp\grok-search-evidence\market")
     market_tools = {step["tool"] for step in market_plan["steps"]}
     cases.append(
         _case(
@@ -2441,7 +2441,7 @@ async def _smoke_mock(start: float) -> dict[str, Any]:
         )
     )
 
-    docs_plan = build_deep_research_plan("深度调研 React useEffect 最新文档", evidence_dir=r"C:\tmp\smart-search-evidence\docs")
+    docs_plan = build_deep_research_plan("深度调研 React useEffect 最新文档", evidence_dir=r"C:\tmp\grok-search-evidence\docs")
     docs_tools = {step["tool"] for step in docs_plan["steps"]}
     cases.append(
         _case(
@@ -2454,7 +2454,7 @@ async def _smoke_mock(start: float) -> dict[str, Any]:
         )
     )
 
-    claim_plan = build_deep_research_plan("帮我核验这个说法是真是假", evidence_dir=r"C:\tmp\smart-search-evidence\claim")
+    claim_plan = build_deep_research_plan("帮我核验这个说法是真是假", evidence_dir=r"C:\tmp\grok-search-evidence\claim")
     cases.append(
         _case(
             "deep_research claim verification requires fetch_before_claim",
@@ -2467,7 +2467,7 @@ async def _smoke_mock(start: float) -> dict[str, Any]:
         )
     )
 
-    url_first_plan = build_deep_research_plan("深度调研 https://example.com/source", evidence_dir=r"C:\tmp\smart-search-evidence\url")
+    url_first_plan = build_deep_research_plan("深度调研 https://example.com/source", evidence_dir=r"C:\tmp\grok-search-evidence\url")
     cases.append(
         _case(
             "deep_research url prompt is fetch first",
@@ -2478,7 +2478,7 @@ async def _smoke_mock(start: float) -> dict[str, Any]:
         )
     )
 
-    normal_prompt = "搜索一下 smart-search 怎么安装"
+    normal_prompt = "搜索一下 grok-search 怎么安装"
     cases.append(
         _case(
             "deep_research normal search prompt does not trigger",

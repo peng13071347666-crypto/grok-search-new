@@ -1,6 +1,6 @@
 #!/bin/bash
 # grok-search — AI-agent multi-source search CLI
-# Self-contained: uses smart_search Python module bundled in the repo.
+# Self-contained: uses grok_search Python package bundled in the repo.
 
 set -euo pipefail
 
@@ -24,19 +24,17 @@ resolve_dir() {
 
 SCRIPT_DIR="$(cd "$(resolve_dir "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-PY_SCRIPT="$REPO_ROOT/grok_search.py"
 
-# Add repo root to PYTHONPATH so smart_search can be imported
-export PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}"
-
-# Prefer: repo's own venv
-if [ -x "$REPO_ROOT/.venv/bin/python" ]; then
-    exec "$REPO_ROOT/.venv/bin/python" "$PY_SCRIPT" "$@"
+# Prefer: repo's own venv (Windows or Unix)
+if [ -x "$REPO_ROOT/.venv/Scripts/python.exe" ]; then
+    exec "$REPO_ROOT/.venv/Scripts/python.exe" -c "from grok_search import main; main()" "$@"
+elif [ -x "$REPO_ROOT/.venv/bin/python" ]; then
+    exec "$REPO_ROOT/.venv/bin/python" -c "from grok_search import main; main()" "$@"
 fi
 
 # Fallback: any python3 with httpx
 if python3 -c "import httpx" 2>/dev/null; then
-    exec python3 "$PY_SCRIPT" "$@"
+    PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" exec python3 -c "from grok_search import main; main()" "$@"
 fi
 
 echo "grok-search: 找不到可用的 Python 环境（需要 httpx）" >&2

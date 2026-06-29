@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 
-SKILL_NAME = "smart-search-cli"
+SKILL_NAME = "grok-search-cli"
 PACKAGE_ROOT_ENV = "SMART_SEARCH_PACKAGE_ROOT"
 
 
@@ -96,7 +96,7 @@ def parse_skill_targets(raw: str) -> list[str]:
 
 def _resource_skill_root() -> Any:
     try:
-        root = resources.files("smart_search").joinpath("assets", "skills", SKILL_NAME)
+        root = resources.files("grok_search").joinpath("assets", "skills", SKILL_NAME)
         if root.is_dir():
             return root
     except (FileNotFoundError, ModuleNotFoundError, AttributeError):
@@ -110,13 +110,13 @@ def _filesystem_skill_root() -> Path | None:
     if package_root:
         base = Path(package_root)
         candidates.extend([
-            base / "src" / "smart_search" / "assets" / "skills" / SKILL_NAME,
+            base / "src" / "grok_search" / "assets" / "skills" / SKILL_NAME,
             base / "skills" / SKILL_NAME,
         ])
 
     repo_root = Path(__file__).resolve().parents[2]
     candidates.extend([
-        repo_root / "src" / "smart_search" / "assets" / "skills" / SKILL_NAME,
+        repo_root / "src" / "grok_search" / "assets" / "skills" / SKILL_NAME,
         repo_root / "skills" / SKILL_NAME,
     ])
 
@@ -167,7 +167,7 @@ def _load_skill_files(source_root: Path | None = None) -> list[tuple[str, bytes]
         if files:
             return files
 
-    raise SkillInstallError("Bundled smart-search-cli skill files were not found.")
+    raise SkillInstallError("Bundled grok-search-cli skill files were not found.")
 
 
 def _skill_digest(files: list[tuple[str, bytes]]) -> str:

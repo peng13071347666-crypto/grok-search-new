@@ -56,10 +56,10 @@ fi
 
 # 5. 配置 Grok API
 info "配置 Grok API..."
-mkdir -p ~/.config/smart-search
+mkdir -p ~/.config/grok-search
 
-if [ -f ~/.config/smart-search/config.json ]; then
-    warn "检测到现有配置 ~/.config/smart-search/config.json"
+if [ -f ~/.config/grok-search/config.json ]; then
+    warn "检测到现有配置 ~/.config/grok-search/config.json"
     read -p "    是否覆盖? [y/N] " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -87,7 +87,7 @@ if [ "${CONFIGURE:-0}" = "1" ]; then
         API_MODEL="${API_MODEL:-grok-4.20-multi-agent-xhigh}"
     fi
 
-    cat > ~/.config/smart-search/config.json <<EOF
+    cat > ~/.config/grok-search/config.json <<EOF
 {
   "OPENAI_COMPATIBLE_API_URL": "$API_URL",
   "OPENAI_COMPATIBLE_API_KEY": "$API_KEY",
@@ -95,8 +95,8 @@ if [ "${CONFIGURE:-0}" = "1" ]; then
   "primary_api_mode": "chat-completions"
 }
 EOF
-    chmod 600 ~/.config/smart-search/config.json
-    success "已配置: ~/.config/smart-search/config.json"
+    chmod 600 ~/.config/grok-search/config.json
+    success "已配置: ~/.config/grok-search/config.json"
 fi
 
 # 6. 配置补源 API（可选）
@@ -155,7 +155,7 @@ if grok-search doctor --format json &> /tmp/grok_doctor.json; then
     MODELS=$(python3 -c "import json; d=json.load(open('/tmp/grok_doctor.json')); print(len(d.get('available_models', [])))" 2>/dev/null || echo "?")
     success "doctor 通过, 可用模型数: $MODELS"
 else
-    warn "doctor 失败, 但已安装完成. 请检查 ~/.config/smart-search/config.json"
+    warn "doctor 失败, 但已安装完成. 请检查 ~/.config/grok-search/config.json"
 fi
 
 # 8. 总结

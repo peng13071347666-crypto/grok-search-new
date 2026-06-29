@@ -1,12 +1,11 @@
-#!/usr/bin/env python3
 """
 grok-search — AI-agent web research CLI with multi-source supplementation.
 
 Architecture:
-  - Simple search:    direct Grok API call via smart_search module
+  - Simple search:    direct Grok API call via internal service module
   - Deep search:      3-way parallel (Grok + Brave + Intent provider)
   - Individual APIs:  direct httpx calls with 1-retry on network errors
-  - Planner:          direct call via smart_search module
+  - Planner:          direct call via internal service module
 
 Config:  env GROK_SEARCH_<KEY>  >  ~/.config/grok-search/config.json  >  defaults
 """
@@ -25,9 +24,8 @@ from urllib.parse import urlparse, urlunparse
 
 import httpx
 
-# Import smart_search directly (self-contained, no subprocess)
-import smart_search.service as ss_service
-import smart_search.config as ss_config
+from . import service as ss_service
+from . import config as ss_config
 
 # ============================================================================
 # Constants
@@ -66,7 +64,6 @@ EXIT_CODES: dict[str, int] = {
     "rate_limited": 5,
 }
 
-SMART_SEARCH_CONFIG = Path.home() / ".config" / "smart-search" / "config.json"
 _OPENAI_MODEL_CACHE: list[str] | None = None
 
 
@@ -353,16 +350,15 @@ def merge_source_lists(*lists: list[dict]) -> list[dict]:
     return merged
 
 
-def _get_tavily_key_from_smart_search() -> str:
-    """Try to read Tavily API key from smart-search config as fallback."""
-    if not SMART_SEARCH_CONFIG.exists():
-        return ""
+def _get_tavily_key_from_config() -> str:
+    """Try to read Tavily API key from grok-search config as fallback."""
     try:
-        data = json.loads(SMART_SEARCH_CONFIG.read_text())
-        return data.get("TAVILY_API_KEY", "")
+        val = Config.get("TAVILY_API_KEY")
+        if val:
+            return val
     except Exception:
-        print("  ⚠ 无法读取 smart-search 配置文件", file=sys.stderr)
-        return ""
+        pass
+    return ""
 
 
 # ============================================================================
@@ -565,7 +561,7 @@ async def serper_search(query: str, count: int = 5) -> dict:
 async def _tavily_search_impl(query: str, count: int = 5) -> dict:
     api_key = Config.get("TAVILY_API_KEY")
     if not api_key:
-        api_key = _get_tavily_key_from_smart_search()
+        api_key = _get_tavily_key_from_config()
     if not api_key:
         return error_result("tavily", query, "config_error", "TAVILY_API_KEY 未配置")
 
@@ -614,11 +610,11 @@ async def tavily_search(query: str, count: int = 5) -> dict:
 
 
 # ============================================================================
-# Smart-search integration (direct import, no subprocess)
+# Grok integration (internal service module)
 # ============================================================================
 
 async def _call_grok_search(query: str, timeout: int = 120, model: str = "", model_profile: str = "daily") -> dict:
-    """Call Grok main search via smart_search.service."""
+    """Call Grok main search via internal service module."""
     requested_model = model
     auto_selected_model = ""
     if not requested_model:
@@ -661,7 +657,7 @@ async def _call_grok_search(query: str, timeout: int = 120, model: str = "", mod
 
 
 async def _call_grok_fetch(url: str) -> dict:
-    """Fetch page content: Jina Reader (free, unlimited) → direct httpx → smart_search fallback."""
+    """Fetch page content: Jina Reader (free, unlimited) → direct httpx → internal fallback."""
     import re
     t0 = time.time()
 
@@ -706,7 +702,7 @@ async def _call_grok_fetch(url: str) -> dict:
     except Exception:
         pass
 
-    # Method 3: Fall back to smart_search (Tavily → Firecrawl)
+    # Method 3: Fall back to internal service (Tavily → Firecrawl)
     try:
         return await asyncio.wait_for(ss_service.fetch(url), 90)
     except asyncio.TimeoutError:
@@ -716,7 +712,7 @@ async def _call_grok_fetch(url: str) -> dict:
 
 
 def _call_grok_deep(query: str) -> dict:
-    """Call deep research planner via smart_search.service."""
+    """Call deep research planner via internal service module."""
     try:
         return ss_service.build_deep_research_plan(query)
     except Exception as e:
@@ -746,7 +742,7 @@ async def deep_search(
     """
     Three-way parallel deep search (or single when no_supplement=True):
 
-      1. Grok main search   (direct smart_search.service call)
+      1. Grok main search   (internal service call)
       2. Brave search        (with Tavily fallback)
       3. Intent search       (baidu / news / serper)
 
@@ -885,8 +881,6 @@ async def doctor_check(live: bool = False) -> dict:
         else:
             checks[key] = {"value": val or "未设置（使用默认值）"}
 
-    # Check smart_search config (embedded, no subprocess). By default this only
-    # hits /models, which should not run inference or consume model-call quota.
     ss_info: dict[str, Any] = {"available": True, "version": "embedded", "error": ""}
     ss_doctor: dict[str, Any] = {}
     primary_connection_test: dict[str, Any] = {}
@@ -934,25 +928,25 @@ async def doctor_check(live: bool = False) -> dict:
         ss_info["error"] = str(e)
 
     core_ok = bool(Config.get("BRAVE_API_KEY")) and bool(
-        Config.get("TAVILY_API_KEY") or _get_tavily_key_from_smart_search()
+        Config.get("TAVILY_API_KEY") or _get_tavily_key_from_config()
     )
-    smart_search_ok = bool(ss_doctor.get("ok", False)) if live and ss_doctor else (
+    grok_search_ok = bool(ss_doctor.get("ok", False)) if live and ss_doctor else (
         primary_connection_test.get("status") == "ok" if primary_connection_test else not bool(ss_info.get("error"))
     )
 
     return {
-        "ok": core_ok and smart_search_ok,
+        "ok": core_ok and grok_search_ok,
         "live_check": live,
         "quota_note": (
             "默认 doctor 只请求 /models，不发起 chat/completions；`--live` 会发起真实模型调用，并可能消耗模型调用次数。"
         ),
         "config_file": str(CONFIG_FILE),
         "config_exists": CONFIG_FILE.exists(),
-        "smart_search": ss_info,
+        "grok_search": ss_info,
         "main_search_connection_tests": main_search_connection_tests,
         "primary_connection_test": primary_connection_test,
         "available_models": list(dict.fromkeys(available_models)),
-        "smart_search_doctor": ss_doctor,
+        "grok_search_doctor": ss_doctor,
         "core_providers_configured": core_ok,
         "checks": checks,
     }
@@ -1264,7 +1258,3 @@ def main() -> None:
 
     if not result.get("ok"):
         sys.exit(_exit_code_for(result.get("error_type", "")))
-
-
-if __name__ == "__main__":
-    main()

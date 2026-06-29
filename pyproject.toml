@@ -21,13 +21,13 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["smart_search*", "smart_search.providers*"]
+include = ["grok_search*", "grok_search.providers*"]
 
 [tool.setuptools.package-data]
-smart_search = [
-    "assets/skills/smart-search-cli/SKILL.md",
-    "assets/skills/smart-search-cli/agents/*.yaml",
-    "assets/skills/smart-search-cli/references/*.md",
+grok_search = [
+    "assets/skills/grok-search-cli/SKILL.md",
+    "assets/skills/grok-search-cli/agents/*.yaml",
+    "assets/skills/grok-search-cli/references/*.md",
 ]
 
 [project.scripts]

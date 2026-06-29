@@ -20,7 +20,7 @@
 - ✅ 修复 `source_warning` 文案 bug：no_supplement 时正确显示"补源已跳过"
 - ✅ 修复 `grok_command` 字段：去掉过时 `--keywords`，用 `--short`
 
-#### smart_search/service.py 修复
+#### grok_search/service.py 修复
 - 修复 `httpx.HTTPStatusError` 处理时重复读取 response body 的潜在问题
 
 #### 新增文档
@@ -49,7 +49,7 @@
 ### Initial Release
 
 - 第一个发布版本
-- 双 CLI 架构（smart-search + grok-search）
+- 双 CLI 架构（grok-search + grok-search）
 - 支持简单搜索、深度搜索、补源搜索、fetch
 - 配置管理 + doctor
 - 4-16 agent Grok 4.20 支持

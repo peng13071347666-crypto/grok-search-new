@@ -6,9 +6,9 @@ from pathlib import Path
 class Config:
     _instance = None
     _SETUP_COMMAND = (
-        "Run `smart-search setup`, or configure XAI_API_KEY and/or "
+        "Run `grok-search setup`, or configure XAI_API_KEY and/or "
         "OPENAI_COMPATIBLE_API_URL plus OPENAI_COMPATIBLE_API_KEY, then run "
-        "`smart-search doctor --format json`."
+        "`grok-search doctor --format json`."
     )
     _DEFAULT_MODEL = "grok-4-fast"
     _DEFAULT_XAI_TOOLS = "web_search,x_search"
@@ -75,12 +75,12 @@ class Config:
         if sys.platform.startswith("win"):
             local_appdata = os.getenv("LOCALAPPDATA")
             if local_appdata:
-                return Path(local_appdata).expanduser() / "smart-search"
-        return Path.home() / ".config" / "smart-search"
+                return Path(local_appdata).expanduser() / "grok-search"
+        return Path.home() / ".config" / "grok-search"
 
     @staticmethod
     def _legacy_windows_config_dir() -> Path:
-        return Path.home() / ".config" / "smart-search"
+        return Path.home() / ".config" / "grok-search"
 
     @staticmethod
     def _config_dir_override_value() -> str:
@@ -131,7 +131,7 @@ class Config:
             config_dir, config_dir_source = self._resolve_config_dir()
             ok = self._safe_mkdir(config_dir)
             if config_dir_source == "default" and not ok:
-                cwd_dir = Path.cwd() / ".smart-search"
+                cwd_dir = Path.cwd() / ".grok-search"
                 if self._safe_mkdir(cwd_dir):
                     config_dir = cwd_dir
                     config_dir_source = "cwd_fallback"
