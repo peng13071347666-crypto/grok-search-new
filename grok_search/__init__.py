@@ -1248,6 +1248,9 @@ def main() -> None:
         result = asyncio.run(doctor_check(live=args.live))
 
     # ---- output ----
+    # Wrap stdout for UTF-8 on Windows (GBK can't encode Unicode chars like •)
+    if hasattr(sys.stdout, 'buffer'):
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
     if args.format == "markdown":
         sys.stdout.write(format_markdown(result))
